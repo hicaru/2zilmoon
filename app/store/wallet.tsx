@@ -1,6 +1,6 @@
 'use client';
 import { Wallet } from '../lib/types';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface WalletState {
   wallet: Wallet | null;
@@ -10,7 +10,16 @@ interface WalletState {
 const WalletContext = createContext<WalletState | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWalletState] = useState<Wallet | null>(null);
+
+  const setWallet = useCallback((newWallet: Wallet | null) => {
+    setWalletState(prevWallet => {
+      if (!newWallet && !prevWallet) return prevWallet;
+      if (!newWallet || !prevWallet) return newWallet;
+      if (newWallet.base16 === prevWallet.base16) return prevWallet;
+      return newWallet;
+    });
+  }, []);
 
   return (
     <WalletContext.Provider value={{ wallet, setWallet }}>
@@ -26,3 +35,4 @@ export const useWallet = () => {
   }
   return context;
 };
+

@@ -1,17 +1,37 @@
 'use client';
 
+import { useState } from 'react';
 import styles from './StakingNode.module.css';
 import { NodeStakeInfo } from '../../lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit, formatAddress, formatCommissionRate } from '../../lib/formatters';
 
 interface StakingNodeProps {
   node: NodeStakeInfo;
-  onClaim: (ssnAddress: string) => void;
+  onClaim: (ssnAddress: string) => Promise<void>;
   onUnstake: () => void;
+  isClaimLoading?: boolean;
 }
 
-const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) => {
+const StakingNode: React.FC<StakingNodeProps> = ({ 
+  node, 
+  onClaim, 
+  onUnstake, 
+  isClaimLoading = false 
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
   const hasRewards = node.rewardsAmount > 0n;
+
+  const handleClaimClick = async () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      await onClaim(node.ssnAddress);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className={`${styles.card} animate-scale-in`}>
       <div className={styles.header}>
@@ -65,11 +85,27 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <button className={`${styles.button} ${styles.claimButton}`} onClick={() => onClaim(node.ssnAddress)}>
-            Claim Rewards
+          <button 
+            className={`${styles.button} ${styles.claimButton} ${
+              isProcessing || isClaimLoading ? styles.loading : ''
+            }`} 
+            onClick={handleClaimClick}
+            disabled={isProcessing || isClaimLoading}
+          >
+            {isProcessing || isClaimLoading ? (
+              <span className={styles.loadingContent}>
+                <span className={styles.spinner}></span>
+                Processing...
+              </span>
+            ) : (
+              'Claim Rewards'
+            )}
           </button>
         ) : (
-          <button className={`${styles.button} ${styles.unstakeButton}`} onClick={onUnstake}>
+          <button 
+            className={`${styles.button} ${styles.unstakeButton}`} 
+            onClick={onUnstake}
+          >
             Unstake
           </button>
         )}
@@ -79,3 +115,4 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 };
 
 export default StakingNode;
+

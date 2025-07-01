@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from './store/wallet';
 import Header from './components/Header';
 import StakingNode from './components/StakingNode';
@@ -16,50 +16,63 @@ const StakingPage = () => {
   const [stakingSummary, setStakingSummary] = useState<StakedNodesSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [claimingNodes, setClaimingNodes] = useState<Set<string>>(new Set());
+  const currentAddressRef = useRef<string>('');
   const stakingContractAddress = '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1';
 
-  const fetchStakingData = async (address: string) => {
-    if (!address) {
-      setError('Please enter a wallet address or connect ZilPay.');
-      setStakingSummary(null);
+  const fetchStakingData = useCallback(async (address: string) => {
+    if (!address || address === currentAddressRef.current) {
       return;
     }
 
+    if (currentAddressRef.current !== address) {
+      setStakingSummary(null);
+      setError(null);
+    }
+
+    currentAddressRef.current = address;
     setLoading(true);
-    setError(null);
-    setStakingSummary(null);
 
     try {
       const checker = new ZilliqaStakeChecker();
       const data = await checker.getStakedNodes(address);
-      setStakingSummary(data);
+      
+      if (currentAddressRef.current === address) {
+        setStakingSummary(data);
+        setError(null);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch staking data.');
+      if (currentAddressRef.current === address) {
+        setError(err.message || 'Failed to fetch staking data.');
+        setStakingSummary(null);
+      }
     } finally {
-      setLoading(false);
+      if (currentAddressRef.current === address) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (wallet && wallet.bech32) {
-      try {
-        fetchStakingData(wallet.base16);
-        setManualWalletAddress('');
-      } catch (e: any) {
-        setError(`Error converting address: ${e.message}`);
-      }
+    if (wallet?.base16) {
+      fetchStakingData(wallet.base16);
+      setManualWalletAddress('');
     } else {
+      currentAddressRef.current = '';
       setStakingSummary(null);
+      setError(null);
     }
-  }, [wallet]);
+  }, [wallet?.base16, fetchStakingData]);
 
-  const handleClaimRewards = async (ssnAddress: string) => {
+  const handleClaimRewards = useCallback(async (ssnAddress: string) => {
     if (!wallet) {
       setError('Please connect your wallet to claim rewards.');
       return;
     }
-    setLoading(true);
+
+    setClaimingNodes(prev => new Set(prev).add(ssnAddress));
     setError(null);
+
     try {
       const payload = {
         _tag: 'WithdrawStakeRewards',
@@ -71,39 +84,49 @@ const StakingPage = () => {
           },
         ],
       };
-      const tx = await zilPay.callTransaction(stakingContractAddress, payload,undefined, undefined, 100000);
+
+      const tx = await zilPay.callTransaction(
+        stakingContractAddress, 
+        payload, 
+        undefined, 
+        undefined, 
+        100000
+      );
+
       if (tx.ID) {
         updateTransactions(wallet.bech32, [
           { hash: tx.ID, confirmed: false, error: false },
         ]);
-        alert(`Transaction sent: ${tx.ID}`);
+        
+        if (wallet.base16) {
+          setTimeout(() => fetchStakingData(wallet.base16), 2000);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Failed to send transaction.');
     } finally {
-      setLoading(false);
+      setClaimingNodes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ssnAddress);
+        return newSet;
+      });
     }
-  };
+  }, [wallet, fetchStakingData]);
 
-  const handleManualAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualAddressChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setManualWalletAddress(event.target.value);
-  };
+  }, []);
 
-  const handleManualFetch = () => {
-    fetchStakingData(manualWalletAddress);
-  };
+  const handleManualFetch = useCallback(() => {
+    if (manualWalletAddress.trim()) {
+      fetchStakingData(manualWalletAddress.trim());
+    }
+  }, [manualWalletAddress, fetchStakingData]);
 
   return (
     <div className={styles.container}>
       <Header />
       <main className={styles.main}>
-        <div className={`${styles.hero} animate-fade-in`}>
-          <h1 className={styles.title}>2zilmoon</h1>
-          <p className={styles.description}>
-            Seamless Zilliqa Staking Management - Track, Claim, and Migrate Your Stakes
-          </p>
-        </div>
-
         {!wallet && (
           <div className={`${styles.inputContainer} animate-slide-up`}>
             <input
@@ -115,7 +138,7 @@ const StakingPage = () => {
             />
             <button
               onClick={handleManualFetch}
-              disabled={loading}
+              disabled={loading || !manualWalletAddress.trim()}
               className={styles.fetchButton}
             >
               {loading ? 'Loading...' : 'Check Stakes'}
@@ -169,8 +192,9 @@ const StakingPage = () => {
                   <div key={node.ssnAddress} style={{ animationDelay: `${index * 0.1}s` }}>
                     <StakingNode
                       node={node}
-                      onClaim={() => handleClaimRewards(node.ssnAddress)}
+                      onClaim={handleClaimRewards}
                       onUnstake={() => console.log('Unstake from', node.ssnName)}
+                      isClaimLoading={claimingNodes.has(node.ssnAddress)}
                     />
                   </div>
                 ))}
@@ -189,3 +213,4 @@ const StakingPage = () => {
 };
 
 export default StakingPage;
+

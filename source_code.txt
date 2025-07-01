@@ -10,6 +10,7 @@ Source Tree:
 │   │   │   └── index.tsx
 │   │   ├── StakingNode
 │   │   │   └── index.tsx
+│   │   ├── ThemeInitializer.tsx
 │   │   ├── ZilPayConnect
 │   │   │   └── index.tsx
 │   │   ├── modals
@@ -93,24 +94,25 @@ import { formatQaWithUnit, formatAddress, formatCommissionRate } from '../../lib
 
 interface StakingNodeProps {
   node: NodeStakeInfo;
-  onClaim?: () => void;
-  onUnstake?: () => void;
+  onClaim: (ssnAddress: string) => void;
+  onUnstake: () => void;
 }
 
 const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) => {
   const hasRewards = node.rewardsAmount > 0n;
-
   return (
     <div className={`${styles.card} animate-scale-in`}>
       <div className={styles.header}>
         <h3 className={styles.nodeName}>{node.ssnName}</h3>
-        <span className={`${styles.statusBadge} ${
-          node.status === 'Активен' ? styles.statusActive : styles.statusInactive
-        }`}>
+        <span
+          className={`${styles.statusBadge} ${
+            node.status === 'Активен' ? styles.statusActive : styles.statusInactive
+          }`}
+        >
           {node.status}
         </span>
       </div>
-      
+
       <div className={styles.info}>
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Node Address</span>
@@ -118,7 +120,7 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
             {formatAddress(node.ssnAddress, 8, 6)}
           </span>
         </div>
-        
+
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Commission Rate</span>
           <span className={`${styles.infoValue} ${styles.commission}`}>
@@ -130,34 +132,32 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
       <div className={styles.metrics}>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>Staked</div>
-          <div className={`${styles.metricValue} ${styles.amount}`} 
-               title={`${node.stakeAmount.toString()} Qa`}>
+          <div
+            className={`${styles.metricValue} ${styles.amount}`}
+            title={`${node.stakeAmount.toString()} Qa`}
+          >
             {formatQaWithUnit(node.stakeAmount)}
           </div>
         </div>
-        
+
         <div className={styles.metric}>
           <div className={styles.metricLabel}>Rewards</div>
-          <div className={`${styles.metricValue} ${styles.rewards}`} 
-               title={`${node.rewardsAmount.toString()} Qa`}>
+          <div
+            className={`${styles.metricValue} ${styles.rewards}`}
+            title={`${node.rewardsAmount.toString()} Qa`}
+          >
             {formatQaWithUnit(node.rewardsAmount)}
           </div>
         </div>
       </div>
-      
+
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <button 
-            className={`${styles.button} ${styles.claimButton}`}
-            onClick={onClaim}
-          >
+          <button className={`${styles.button} ${styles.claimButton}`} onClick={() => onClaim(node.ssnAddress)}>
             Claim Rewards
           </button>
         ) : (
-          <button 
-            className={`${styles.button} ${styles.unstakeButton}`}
-            onClick={onUnstake}
-          >
+          <button className={`${styles.button} ${styles.unstakeButton}`} onClick={onUnstake}>
             Unstake
           </button>
         )}
@@ -168,6 +168,23 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 
 export default StakingNode;
 
+```
+
+`2zilmoon/app/components/ThemeInitializer.tsx`:
+
+```tsx
+'use client';
+
+import { useEffect } from 'react';
+import { initTheme } from '../store/settings';
+
+export const ThemeInitializer = () => {
+  useEffect(() => {
+    initTheme();
+  }, []);
+
+  return null;
+};
 
 ```
 
@@ -186,7 +203,11 @@ export const ZilPayConnect = () => {
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
-    zilPay.observable(setWallet);
+    zilPay.observable((account)  => {
+      if (wallet?.base16 != account?.base16) {
+        setWallet(account);
+      }
+    });
   }, [setWallet]);
 
   const handleConnect = async () => {
@@ -443,6 +464,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from './store/wallet';
+import { ThemeInitializer } from './components/ThemeInitializer'; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -459,6 +481,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <ThemeInitializer /> 
         <WalletProvider>
           {children}
         </WalletProvider>
@@ -466,7 +489,6 @@ export default function RootLayout({
     </html>
   );
 }
-
 
 ```
 
@@ -1144,7 +1166,6 @@ export class ZilPayBase {
 ```ts
 'use client';
 import { Wallet } from './types';
-
 declare global {
   interface Window {
     zilPay: any;
@@ -1172,6 +1193,29 @@ export const zilPay = {
       console.error('Failed to connect to ZilPay:', error);
       return null;
     }
+  },
+  callTransaction: async (
+    contractAddress: string,
+    data: any,
+    amount: string = '0',
+    gasPrice: number = 2000000000,
+    gasLimit: number = 10000,
+  ) => {
+    const zilPay = await getZilPay();
+    const { contracts, utils } = zilPay;
+    const contract = contracts.at(contractAddress);
+    const { BN } = utils;
+
+    return await contract.call(
+      data._tag,
+      data.params,
+      {
+        amount: new BN(amount),
+        gasPrice: new BN(gasPrice),
+        gasLimit: new BN(gasLimit),
+      },
+      true,
+    );
   },
   observable: (callback: (wallet: Wallet | null) => void) => {
     getZilPay().then((zilPay) => {
@@ -1219,6 +1263,8 @@ import StakingNode from './components/StakingNode';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit } from './lib/formatters';
+import { zilPay } from './lib/zilpay';
+import { updateTransactions } from './store/transactions';
 
 const StakingPage = () => {
   const { wallet } = useWallet();
@@ -1226,6 +1272,7 @@ const StakingPage = () => {
   const [stakingSummary, setStakingSummary] = useState<StakedNodesSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const stakingContractAddress = '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1';
 
   const fetchStakingData = async (address: string) => {
     if (!address) {
@@ -1250,17 +1297,45 @@ const StakingPage = () => {
   };
 
   useEffect(() => {
-    if (wallet && wallet.bech32) {
-      try {
-        fetchStakingData(wallet.base16);
-        setManualWalletAddress(''); // Clear manual input when wallet connects
-      } catch (e: any) {
-        setError(`Error converting address: ${e.message}`);
-      }
+    if (wallet && wallet.base16) {
+      fetchStakingData(wallet.base16);
+      setManualWalletAddress('');
     } else {
       setStakingSummary(null);
     }
-  }, [wallet]);
+  }, [wallet?.base16]); // ИЗМЕНЕНИЕ: Зависимость изменена на wallet?.base16
+
+  const handleClaimRewards = async (ssnAddress: string) => {
+    if (!wallet) {
+      setError('Please connect your wallet to claim rewards.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        _tag: 'WithdrawStakeRewards',
+        params: [
+          {
+            vname: 'ssnaddr',
+            type: 'ByStr20',
+            value: ssnAddress,
+          },
+        ],
+      };
+      const tx = await zilPay.callTransaction(stakingContractAddress, payload,undefined, undefined, 100000);
+      if (tx.ID) {
+        updateTransactions(wallet.bech32, [
+          { hash: tx.ID, confirmed: false, error: false },
+        ]);
+        alert(`Transaction sent: ${tx.ID}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send transaction.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleManualAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setManualWalletAddress(event.target.value);
@@ -1281,6 +1356,7 @@ const StakingPage = () => {
           </p>
         </div>
 
+        
         {!wallet && (
           <div className={`${styles.inputContainer} animate-slide-up`}>
             <input
@@ -1290,9 +1366,9 @@ const StakingPage = () => {
               onChange={handleManualAddressChange}
               className={styles.addressInput}
             />
-            <button 
-              onClick={handleManualFetch} 
-              disabled={loading} 
+            <button
+              onClick={handleManualFetch}
+              disabled={loading}
               className={styles.fetchButton}
             >
               {loading ? 'Loading...' : 'Check Stakes'}
@@ -1300,11 +1376,7 @@ const StakingPage = () => {
           </div>
         )}
 
-        {error && (
-          <div className={`${styles.error} animate-scale-in`}>
-            {error}
-          </div>
-        )}
+        {error && <div className={`${styles.error} animate-scale-in`}>{error}</div>}
 
         {loading && (
           <div className={`${styles.loading} animate-fade-in`}>
@@ -1316,27 +1388,31 @@ const StakingPage = () => {
         {stakingSummary && (
           <div className={`${styles.summaryContainer} animate-slide-up`}>
             <h2 className={styles.summaryTitle}>Your Staking Portfolio</h2>
-            
+
             <div className={styles.summaryStats}>
               <div className={`${styles.statCard} ${styles.totalStaked}`}>
                 <div className={styles.statLabel}>Total Staked</div>
-                <div className={styles.statValue} title={`${stakingSummary.totalStaked.toString()} Qa`}>
+                <div
+                  className={styles.statValue}
+                  title={`${stakingSummary.totalStaked.toString()} Qa`}
+                >
                   {formatQaWithUnit(stakingSummary.totalStaked)}
                 </div>
               </div>
-              
+
               <div className={`${styles.statCard} ${styles.totalRewards}`}>
                 <div className={styles.statLabel}>Unclaimed Rewards</div>
-                <div className={styles.statValue} title={`${stakingSummary.totalRewards.toString()} Qa`}>
+                <div
+                  className={styles.statValue}
+                  title={`${stakingSummary.totalRewards.toString()} Qa`}
+                >
                   {formatQaWithUnit(stakingSummary.totalRewards)}
                 </div>
               </div>
-              
+
               <div className={`${styles.statCard} ${styles.totalNodes}`}>
                 <div className={styles.statLabel}>Active Nodes</div>
-                <div className={styles.statValue}>
-                  {stakingSummary.totalNodes}
-                </div>
+                <div className={styles.statValue}>{stakingSummary.totalNodes}</div>
               </div>
             </div>
 
@@ -1344,9 +1420,9 @@ const StakingPage = () => {
               <div className={styles.grid}>
                 {stakingSummary.nodes.map((node, index) => (
                   <div key={node.ssnAddress} style={{ animationDelay: `${index * 0.1}s` }}>
-                    <StakingNode 
-                      node={node} 
-                      onClaim={() => console.log('Claim rewards for', node.ssnName)}
+                    <StakingNode
+                      node={node}
+                      onClaim={() => handleClaimRewards(node.ssnAddress)}
                       onUnstake={() => console.log('Unstake from', node.ssnName)}
                     />
                   </div>
@@ -1367,7 +1443,6 @@ const StakingPage = () => {
 
 export default StakingPage;
 
-
 ```
 
 `2zilmoon/app/store/settings.ts`:
@@ -1384,12 +1459,31 @@ interface SettingsState {
   theme: Themes;
 }
 
+const getInitialTheme = (): Themes => {
+  if (typeof window !== 'undefined') {
+    const savedTheme = window.localStorage.getItem('theme') as Themes;
+    return savedTheme || Themes.Light;
+  }
+  return Themes.Light;
+};
+
 export const $settings = new Store<SettingsState>({
-  theme: Themes.Light,
+  theme: getInitialTheme(),
 });
 
 export function updateSettingsStore(newState: SettingsState) {
   $settings.setState(newState);
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem('theme', newState.theme);
+    document.documentElement.setAttribute('data-theme', newState.theme);
+  }
+}
+
+export function initTheme() {
+    if (typeof window !== 'undefined') {
+        const theme = getInitialTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+    }
 }
 
 ```
@@ -1397,14 +1491,13 @@ export function updateSettingsStore(newState: SettingsState) {
 `2zilmoon/app/store/transactions.ts`:
 
 ```ts
-import createStore from 'react-stores';
+import { Store } from 'react-stores';
 
 export type Tx = {
   hash: string;
   confirmed: boolean;
   error: boolean;
 };
-
 export type Txs = {
   transactions: Tx[];
 };
@@ -1413,7 +1506,7 @@ const initState: Txs = {
   transactions: [],
 };
 
-export const $transactions = createStore(initState);
+export const $transactions = new Store(initState);
 
 export function updateTransactions(key: string, transactions: Tx[]) {
   const state = $transactions.state;

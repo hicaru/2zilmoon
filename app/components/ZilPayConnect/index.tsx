@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useWallet } from '../../store/wallet';
 import { zilPay } from '../../lib/zilpay';
 import { formatAddress } from '../../lib/formatters';
@@ -8,10 +8,14 @@ import styles from './ZilPayConnect.module.css';
 export const ZilPayConnect = () => {
   const { wallet, setWallet } = useWallet();
   const [connecting, setConnecting] = useState(false);
+  const observerInitialized = useRef(false);
 
   useEffect(() => {
-    zilPay.observable((account)  => {
-      if (wallet?.base16 != account?.base16) {
+    if (observerInitialized.current) return;
+    
+    observerInitialized.current = true;
+    zilPay.observable((account) => {
+      if (account?.base16 != wallet?.base16) {
         setWallet(account);
       }
     });
@@ -23,9 +27,7 @@ export const ZilPayConnect = () => {
     setConnecting(true);
     try {
       const connectedWallet = await zilPay.connect();
-      if (connectedWallet) {
-        setWallet(connectedWallet);
-      }
+      setWallet(connectedWallet);
     } catch (error) {
       console.error('Failed to connect:', error);
     } finally {

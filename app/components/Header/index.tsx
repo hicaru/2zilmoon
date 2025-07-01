@@ -10,8 +10,7 @@ const Header = () => {
 
   const toggleTheme = () => {
     const newTheme = settings.theme === Themes.Light ? Themes.Dark : Themes.Light;
-    updateSettingsStore({ ...settings, theme: newTheme });
-    document.documentElement.setAttribute('data-theme', newTheme);
+    updateSettingsStore({ theme: newTheme });
   };
 
   return (
