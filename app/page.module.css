@@ -1,224 +1,262 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  position: relative;
-}
-
-.container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="25" cy="25" r="1" fill="%23ffffff" fill-opacity="0.05"/><circle cx="75" cy="25" r="1" fill="%23ffffff" fill-opacity="0.03"/><circle cx="50" cy="50" r="1" fill="%23ffffff" fill-opacity="0.04"/><circle cx="25" cy="75" r="1" fill="%23ffffff" fill-opacity="0.03"/><circle cx="75" cy="75" r="1" fill="%23ffffff" fill-opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  pointer-events: none;
+  background: var(--bg-primary);
 }
 
 .main {
-  position: relative;
-  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  animation: fadeIn 0.8s ease-out;
+  padding: 2rem 20px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+  line-height: 1.2;
 }
 
 .description {
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 3rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.zilpayConnectContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  font-size: 1.25rem;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
-}
-
-.connectedAddress {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 0.75rem 1.5rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.inputContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  max-width: 500px;
+  max-width: 600px;
   margin-left: auto;
   margin-right: auto;
 }
 
-.addressInput {
-  width: 100%;
-  padding: 1rem 1.5rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  color: white;
-  font-size: 1rem;
-  font-family: 'Courier New', monospace;
-  transition: all 0.3s ease;
-  outline: none;
+.walletSection {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
 }
 
-.addressInput::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+.walletConnected {
+  background: rgba(74, 222, 128, 0.05);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.walletTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.connectedInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: var(--border-radius);
+}
+
+.connectedAddress {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9rem;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.inputContainer {
+  display: flex;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.addressInput {
+  flex: 1;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.3s ease;
 }
 
 .addressInput:focus {
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  outline: none;
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .fetchButton {
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: var(--primary-gradient);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--border-radius);
   color: white;
+  padding: 1rem 2rem;
   font-weight: 600;
-  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-  min-width: 200px;
+  white-space: nowrap;
 }
 
 .fetchButton:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.6);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .fetchButton:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none;
 }
 
 .error {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  text-align: center;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  color: #f87171;
+  padding: 1rem;
+  border-radius: var(--border-radius);
   margin: 1rem 0;
-  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+  text-align: center;
   font-weight: 500;
-  animation: slideIn 0.5s ease-out;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--text-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
 }
 
 .summaryContainer {
-  animation: fadeIn 0.8s ease-out;
+  margin-bottom: 3rem;
 }
 
-.summaryContainer h2 {
-  color: white;
-  text-align: center;
-  margin-bottom: 2rem;
-  font-size: 2.5rem;
+.summaryTitle {
+  font-size: 2rem;
   font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-align: center;
 }
 
 .summaryStats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
 
 .statCard {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
   padding: 2rem;
   text-align: center;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
 .statCard:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.statCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-gradient);
 }
 
 .statLabel {
-  color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
-  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .statValue {
-  color: white;
-  font-size: 1.8rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  font-family: 'Courier New', monospace;
-  word-break: break-all;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.totalStaked .statValue {
+  color: var(--text-accent);
+}
+
+.totalRewards .statValue {
+  color: #4ade80;
+}
+
+.totalNodes .statValue {
+  color: #f59e0b;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 2rem;
-  animation: fadeIn 1s ease-out;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
 .noStakes {
   text-align: center;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1.2rem;
-  padding: 3rem;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
   margin-top: 2rem;
 }
 
 @media (max-width: 768px) {
   .main {
-    padding: 1rem;
+    padding: 1rem 15px;
+  }
+  
+  .title {
+    font-size: 2.5rem;
   }
   
   .description {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
   
-  .summaryContainer h2 {
-    font-size: 2rem;
+  .walletSection {
+    padding: 1.5rem;
   }
   
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  .inputContainer {
+    flex-direction: column;
   }
   
   .summaryStats {
@@ -226,12 +264,18 @@
     gap: 1rem;
   }
   
-  .inputContainer {
-    width: 100%;
+  .statCard {
+    padding: 1.5rem;
   }
   
-  .addressInput {
-    font-size: 0.9rem;
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .connectedInfo {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 

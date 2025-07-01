@@ -1,0 +1,1423 @@
+Project Path: 2zilmoon
+
+Source Tree:
+
+```txt
+2zilmoon
+├── app
+│   ├── components
+│   │   ├── Header
+│   │   │   └── index.tsx
+│   │   ├── StakingNode
+│   │   │   └── index.tsx
+│   │   ├── ZilPayConnect
+│   │   │   └── index.tsx
+│   │   ├── modals
+│   │   │   └── account
+│   │   │       └── index.tsx
+│   │   └── ui
+│   │       ├── AccountCard.tsx
+│   │       ├── Modal.tsx
+│   │       ├── Toggle.tsx
+│   │       └── TxCard.tsx
+│   ├── layout.tsx
+│   ├── lib
+│   │   ├── dex.ts
+│   │   ├── formatters.ts
+│   │   ├── trim.ts
+│   │   ├── types.ts
+│   │   ├── zilliqa-stake-checker-client.ts
+│   │   ├── zilliqa-stake-checker.ts
+│   │   ├── zilpay-base.ts
+│   │   └── zilpay.ts
+│   ├── page.tsx
+│   └── store
+│       ├── settings.ts
+│       ├── transactions.ts
+│       └── wallet.tsx
+└── next.config.ts
+
+```
+
+`2zilmoon/app/components/Header/index.tsx`:
+
+```tsx
+'use client';
+
+import styles from './Header.module.css';
+import { ZilPayConnect } from '../ZilPayConnect';
+
+const Header = () => {
+  return (
+    <header className={styles.header}>
+      <h1 className={styles.logo}>2zilmoon</h1>
+      <div className={styles.controls}>
+        <ZilPayConnect />
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+
+```
+
+`2zilmoon/app/components/StakingNode/index.tsx`:
+
+```tsx
+'use client';
+
+import styles from './StakingNode.module.css';
+import { NodeStakeInfo } from '../../lib/zilliqa-stake-checker-client';
+
+interface StakingNodeProps {
+  node: NodeStakeInfo;
+}
+
+const StakingNode: React.FC<StakingNodeProps> = ({ node }) => {
+  const hasRewards = node.rewardsAmount > 0n;
+
+  const formatNumber = (value: bigint) => {
+    const str = value.toString();
+    if (str.length > 15) {
+      return `${str.substring(0, 8)}...${str.substring(str.length - 4)}`;
+    }
+    return str;
+  };
+
+  const formatAddress = (address: string) => {
+    return `${address.substring(0, 8)}...${address.substring(address.length - 6)}`;
+  };
+
+  const formatCommissionRate = (rate: bigint) => {
+    const rateNumber = Number(rate) / 10000000; // Конвертируем из 10^7 в проценты
+    return `${rateNumber.toFixed(2)}%`;
+  };
+
+  return (
+    <div className={styles.card}>
+      <h3 className={styles.nodeName}>{node.ssnName}</h3>
+      
+      <div className={styles.info}>
+        <div className={styles.infoItem}>
+          <span className={styles.infoLabel}>Address</span>
+          <span className={`${styles.infoValue} ${styles.address}`} title={node.ssnAddress}>
+            {formatAddress(node.ssnAddress)}
+          </span>
+        </div>
+        
+        <div className={styles.infoItem}>
+          <span className={styles.infoLabel}>Staked Amount</span>
+          <span className={`${styles.infoValue} ${styles.amount} ${node.stakeAmount.toString().length > 15 ? styles.largeNumber : ''}`} title={`${node.stakeAmount.toString()} Qa`}>
+            {formatNumber(node.stakeAmount)} Qa
+          </span>
+        </div>
+        
+        <div className={styles.infoItem}>
+          <span className={styles.infoLabel}>Rewards</span>
+          <span className={`${styles.infoValue} ${styles.rewards} ${node.rewardsAmount.toString().length > 15 ? styles.largeNumber : ''}`} title={`${node.rewardsAmount.toString()} Qa`}>
+            {formatNumber(node.rewardsAmount)} Qa
+          </span>
+        </div>
+        
+        <div className={styles.infoItem}>
+          <span className={styles.infoLabel}>Commission</span>
+          <span className={styles.infoValue}>
+            {formatCommissionRate(node.commissionRate)}
+          </span>
+        </div>
+        
+        <div className={styles.infoItem}>
+          <span className={styles.infoLabel}>Status</span>
+          <span className={`${styles.infoValue} ${styles.status} ${node.status === 'Активен' ? styles.statusActive : styles.statusInactive}`}>
+            {node.status}
+          </span>
+        </div>
+      </div>
+      
+      <div className={styles.buttonContainer}>
+        {hasRewards ? (
+          <button className={`${styles.button} ${styles.claimButton}`}>
+            Claim Rewards
+          </button>
+        ) : (
+          <button className={`${styles.button} ${styles.unstakeButton}`}>
+            Unstake
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default StakingNode;
+
+
+```
+
+`2zilmoon/app/components/ZilPayConnect/index.tsx`:
+
+```tsx
+'use client';
+import { useEffect } from 'react';
+import { useWallet } from '../../store/wallet';
+import { zilPay } from '../../lib/zilpay';
+import styles from './ZilPayConnect.module.css';
+
+export const ZilPayConnect = () => {
+  const { wallet, setWallet } = useWallet();
+
+  useEffect(() => {
+    zilPay.observable(setWallet);
+  }, [setWallet]);
+
+  const handleConnect = async () => {
+    const connectedWallet = await zilPay.connect();
+    if (connectedWallet) {
+      setWallet(connectedWallet);
+    }
+  };
+
+  const trimAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  return (
+    <div>
+      {wallet ? (
+        <button className={styles.connectButton}>
+          {trimAddress(wallet.bech32)}
+        </button>
+      ) : (
+        <button className={styles.connectButton} onClick={handleConnect}>
+          Connect
+        </button>
+      )}
+    </div>
+  );
+};
+
+```
+
+`2zilmoon/app/components/modals/account/index.tsx`:
+
+```tsx
+import styles from "./index.module.scss";
+
+import React from "react";
+import { useStore } from "react-stores";
+import { useTranslation } from "next-i18next";
+
+import { Modal, ModalHeader } from "@/components/ui/Modal";
+import { TxCard } from "@/components/ui/TxCard";
+import { $transactions, resetTransactions } from "@/store/transactions";
+import { AccountCard } from "@/components/ui/AccountCard";
+
+import type { Wallet } from "@/lib/types";
+import { $wallet } from "@/store/wallet";
+import { Toggle } from "@/components/ui/Toggle";
+import { $settings, updateSettingsStore } from "@/store/settings";
+import { Themes } from "@/store/settings";
+
+type Prop = {
+  show: boolean;
+  address: Wallet | null;
+  onClose: () => void;
+};
+
+
+export var AccountModal: React.FC<Prop> = function ({
+  show,
+  onClose,
+  address
+}) {
+  const common = useTranslation(`common`);
+  const { transactions } = useStore($transactions);
+  const wallet = useStore($wallet);
+  const settings = useStore($settings);
+
+  const hanldeChangeTheme = React.useCallback((value: boolean) => {
+    if (value) {
+      updateSettingsStore({
+        ...settings,
+        theme: Themes.Dark
+      });
+    } else {
+      updateSettingsStore({
+        ...settings,
+        theme: Themes.Light
+      });
+    }
+  }, [settings]);
+
+  return (
+    <Modal
+      show={show}
+      title={(
+        <ModalHeader onClose={onClose}>
+          {common.t(`account`)}
+        </ModalHeader>
+      )}
+      width="450px"
+      onClose={onClose}
+    >
+      <AccountCard wallet={address} />
+      <div className={styles.txlist}>
+        <Toggle
+          value={settings.theme === Themes.Dark}
+          onToggle={hanldeChangeTheme}
+        />
+        {transactions.length === 0 ? (
+          <p className={styles.here}>
+            {common.t(`tx_appear_here`)}
+          </p>
+        ) : (
+          <div>
+            <div className={styles.header}>
+              <p>
+                {common.t(`recent_txns`)}
+              </p>
+              <p
+                className={styles.clear}
+                onClick={() => resetTransactions(String(wallet?.bech32))}
+              >
+                (
+                {common.t(`clear_all`)}
+                )
+              </p>
+            </div>
+            {transactions.map((tx) => (
+              <TxCard key={tx.hash} tx={tx} />
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+};
+
+```
+
+`2zilmoon/app/components/ui/AccountCard.tsx`:
+
+```tsx
+import React from 'react';
+
+interface AccountCardProps {
+  wallet: any; // Replace 'any' with your actual wallet type
+}
+
+export const AccountCard: React.FC<AccountCardProps> = ({ wallet }) => {
+  return (
+    <div style={{ border: '1px solid #ccc', padding: '10px', margin: '5px 0' }}>
+      <p>Address: {wallet?.bech32}</p>
+      <p>Balance: ...</p>
+    </div>
+  );
+};
+
+```
+
+`2zilmoon/app/components/ui/Modal.tsx`:
+
+```tsx
+import React from 'react';
+
+interface ModalProps {
+  show: boolean;
+  title: React.ReactNode;
+  width?: string;
+  onClose: () => void;
+}
+
+export const Modal: React.FC<ModalProps> = ({ show, title, width, onClose, children }) => {
+  if (!show) return null;
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: width || 'auto', position: 'relative' }}>
+        {title}
+        <button onClick={onClose} style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '1.2em', cursor: 'pointer' }}>&times;</button>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+interface ModalHeaderProps {
+  onClose: () => void;
+}
+
+export const ModalHeader: React.FC<ModalHeaderProps> = ({ onClose, children }) => {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+      <h2>{children}</h2>
+    </div>
+  );
+};
+
+```
+
+`2zilmoon/app/components/ui/Toggle.tsx`:
+
+```tsx
+import React from 'react';
+
+interface ToggleProps {
+  value: boolean;
+  onToggle: (value: boolean) => void;
+}
+
+export const Toggle: React.FC<ToggleProps> = ({ value, onToggle }) => {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+      <input
+        type="checkbox"
+        checked={value}
+        onChange={(e) => onToggle(e.target.checked)}
+        style={{ marginRight: '8px' }}
+      />
+      <span>{value ? 'Dark Mode' : 'Light Mode'}</span>
+    </label>
+  );
+};
+
+```
+
+`2zilmoon/app/components/ui/TxCard.tsx`:
+
+```tsx
+import React from 'react';
+
+interface TxCardProps {
+  tx: any; // Replace 'any' with your actual transaction type
+}
+
+export const TxCard: React.FC<TxCardProps> = ({ tx }) => {
+  return (
+    <div style={{ border: '1px solid #ccc', padding: '10px', margin: '5px 0' }}>
+      <p>Hash: {tx.hash}</p>
+      <p>Confirmed: {tx.confirmed ? 'Yes' : 'No'}</p>
+      {tx.error && <p style={{ color: 'red' }}>Error: {tx.error}</p>}
+    </div>
+  );
+};
+
+```
+
+`2zilmoon/app/layout.tsx`:
+
+```tsx
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { WalletProvider } from './store/wallet';
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "2zilmoon",
+  description: "Zilliqa Staking Migration",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <WalletProvider>
+          {children}
+        </WalletProvider>
+      </body>
+    </html>
+  );
+}
+
+
+```
+
+`2zilmoon/app/lib/dex.ts`:
+
+```ts
+export class DragonDex {
+  updateTokens() {
+    // Placeholder for updating tokens logic
+    console.log('DragonDex: updateTokens called');
+  }
+
+  updateState() {
+    // Placeholder for updating DEX state logic
+    console.log('DragonDex: updateState called');
+  }
+}
+```
+
+`2zilmoon/app/lib/formatters.ts`:
+
+```ts
+export const formatNumber = (value: bigint, options?: Intl.NumberFormatOptions): string => {
+  // Конвертируем bigint в number для форматирования
+  const numberValue = Number(value);
+  
+  // Если число слишком большое для Number, обрабатываем как строку
+  if (numberValue === Infinity || numberValue.toString() !== value.toString()) {
+    const str = value.toString();
+    if (str.length > 15) {
+      return `${str.substring(0, 8)}...${str.substring(str.length - 4)}`;
+    }
+    return addCommas(str);
+  }
+  
+  const formatter = new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0,
+    ...options
+  });
+  
+  return formatter.format(numberValue);
+};
+
+export const formatCurrency = (value: bigint, currency: string = 'ZIL'): string => {
+  const formatted = formatNumber(value);
+  return `${formatted} ${currency}`;
+};
+
+export const formatAddress = (address: string, startChars: number = 8, endChars: number = 6): string => {
+  if (!address || address.length <= startChars + endChars) {
+    return address;
+  }
+  return `${address.substring(0, startChars)}...${address.substring(address.length - endChars)}`;
+};
+
+export const formatCommissionRate = (rate: bigint): string => {
+  const rateNumber = Number(rate) / 10000000; // Конвертируем из 10^7 в проценты
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'percent',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return formatter.format(rateNumber / 100);
+};
+
+// Вспомогательная функция для добавления запятых в большие числа
+const addCommas = (str: string): string => {
+  return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+export const formatQa = (qa: bigint): string => {
+  const qaString = qa.toString();
+  if (qaString.length > 12) {
+    // Для очень больших чисел показываем сокращенную версию
+    const formatted = formatNumber(qa);
+    return `${formatted} Qa`;
+  }
+  return `${formatNumber(qa)} Qa`;
+};
+
+
+```
+
+`2zilmoon/app/lib/trim.ts`:
+
+```ts
+export function trim(str: string, len = 10) {
+  const half = Math.floor(len / 2);
+  return `${str.slice(0, half)}...${str.slice(str.length - half, str.length)}`;
+}
+
+```
+
+`2zilmoon/app/lib/types.ts`:
+
+```ts
+export interface Wallet {
+  base16: string;
+  bech32: string;
+}
+
+```
+
+`2zilmoon/app/lib/zilliqa-stake-checker-client.ts`:
+
+```ts
+// Конфигурация для Mainnet
+const MAINNET_CONFIG = {
+    api: 'https://api.zilliqa.com',
+    impl: '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1',
+    chainId: 1
+};
+
+// Интерфейсы
+export interface NodeStakeInfo {
+    ssnName: string;
+    ssnAddress: string;
+    stakeAmount: bigint;
+    rewardsAmount: bigint;
+    commissionRate: bigint;
+    status: string;
+}
+
+export interface BatchQueryResult {
+    id: number;
+    result: any;
+    jsonrpc?: string;
+}
+
+export interface RewardCalculationData {
+    lastRewardCycle: number;
+    lastWithdrawCycleMap: any;
+    stakeSsnPerCycleMaps: { [ssnAddress: string]: any };
+    directDepositMaps: { [ssnAddress: string]: any };
+    buffDepositMaps: { [ssnAddress: string]: any };
+    delegStakePerCycleMaps: { [ssnAddress: string]: any };
+}
+
+export interface StakedNodesSummary {
+    nodes: NodeStakeInfo[];
+    totalStaked: bigint;
+    totalRewards: bigint;
+    totalNodes: number;
+}
+
+export class ZilliqaStakeChecker {
+    private apiUrl: string;
+    private implAddress: string;
+
+    constructor() {
+        this.apiUrl = MAINNET_CONFIG.api;
+        this.implAddress = MAINNET_CONFIG.impl;
+    }
+
+    private async batchQuery(queries: Array<[string, string, any[]]>): Promise<BatchQueryResult[]> {
+        if (queries.length === 0) return [];
+        const requestBody = queries.map((query, index) => ({
+            jsonrpc: '2.0',
+            id: index + 1,
+            method: 'GetSmartContractSubState',
+            params: [
+                query[0],
+                query[1],
+                query[2]
+            ]
+        }));
+
+        try {
+            const response = await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Сетевая ошибка: ${response.status} ${response.statusText}`);
+            }
+
+            const jsonResponse: BatchQueryResult[] | {error: any} = await response.json();
+            
+            if (!Array.isArray(jsonResponse)) {
+                 if (jsonResponse.error) {
+                    throw new Error(`Ошибка RPC: ${jsonResponse.error.message}`);
+                 }
+                throw new Error('Ответ от API не является массивом, как ожидалось для batch-запроса.');
+            }
+            
+            return jsonResponse.sort((a, b) => a.id - b.id);
+            
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    private normalizeAddress(address: string): string {
+        if (!/^0x[0-9a-f]{40}$/i.test(address)) {
+            throw new Error(`Неверный формат адреса: ${address}. Ожидается hex-адрес формата 0x...`);
+        }
+        return address.toLowerCase();
+    }
+
+    private async calculateRewards(normalizedAddress: string, userDeposits: { [ssn: string]: string }, rewardData: RewardCalculationData): Promise<{ [ssnAddress: string]: bigint }> {
+        const rewardsBySsn: { [ssnAddress: string]: bigint } = {};
+
+        for (const ssnAddress of Object.keys(userDeposits)) {
+            let totalSsnReward = 0n;
+
+            try {
+                const lastWithdrawCycle = parseInt(rewardData.lastWithdrawCycleMap?.last_withdraw_cycle_deleg?.[normalizedAddress]?.[ssnAddress] || '0');
+                const cyclesToCalculate = [];
+                for (let i = lastWithdrawCycle + 1; i <= rewardData.lastRewardCycle; i++) {
+                    cyclesToCalculate.push(i);
+                }
+
+                if (cyclesToCalculate.length === 0) {
+                    rewardsBySsn[ssnAddress] = 0n;
+                    continue;
+                }
+
+                const delegStakePerCycleMap = new Map<number, bigint>();
+                const directMap = rewardData.directDepositMaps[ssnAddress]?.direct_deposit_deleg?.[normalizedAddress]?.[ssnAddress] || {};
+                const buffMap = rewardData.buffDepositMaps[ssnAddress]?.buff_deposit_deleg?.[normalizedAddress]?.[ssnAddress] || {};
+
+                for (let cycle = 1; cycle <= rewardData.lastRewardCycle; cycle++) {
+                    const c1 = cycle - 1;
+                    const c2 = cycle - 2;
+                    const dir_amt = BigInt(directMap[c1.toString()] || 0);
+                    const buf_amt = BigInt(buffMap[c2.toString()] || 0);
+                    const last_amt = delegStakePerCycleMap.get(c1) || 0n;
+                    const total_amt = last_amt + dir_amt + buf_amt;
+                    delegStakePerCycleMap.set(cycle, total_amt);
+                }
+
+                const ssnCycleInfoMap = rewardData.stakeSsnPerCycleMaps[ssnAddress]?.stake_ssn_per_cycle?.[ssnAddress] || {};
+
+                for (const cycle of cyclesToCalculate) {
+                    const cycleInfo = ssnCycleInfoMap[cycle];
+                    if (!cycleInfo) continue;
+
+                    const totalRewardsForCycle = BigInt(cycleInfo.arguments[1]);
+                    const totalStakeForCycle = BigInt(cycleInfo.arguments[0]);
+                    const delegStakeForCycle = delegStakePerCycleMap.get(cycle);
+
+                    if (delegStakeForCycle && delegStakeForCycle > 0n && totalStakeForCycle > 0n) {
+                        const cycleReward = (delegStakeForCycle * totalRewardsForCycle) / totalStakeForCycle;
+                        totalSsnReward += cycleReward;
+                    }
+                }
+            } catch (e) {
+                totalSsnReward = 0n;
+            }
+
+            rewardsBySsn[ssnAddress] = totalSsnReward;
+        }
+        
+        return rewardsBySsn;
+    }
+
+    async getStakedNodes(walletAddress: string): Promise<StakedNodesSummary> {
+        const normalizedAddress = this.normalizeAddress(walletAddress);
+
+        const initialQueries: Array<[string, string, any[]]> = [
+            [this.implAddress, 'deposit_amt_deleg', [normalizedAddress]],
+            [this.implAddress, 'ssnlist', []],
+            [this.implAddress, 'lastrewardcycle', []],
+            [this.implAddress, 'last_withdraw_cycle_deleg', [normalizedAddress]],
+        ];
+
+        try {
+            const initialResults = await this.batchQuery(initialQueries);
+            
+            const depositsResult = initialResults[0]?.result;
+            const ssnListResult = initialResults[1]?.result;
+            const lastRewardCycleResult = initialResults[2]?.result;
+            const lastWithdrawResult = initialResults[3]?.result;
+
+            if (!depositsResult || !ssnListResult || !lastRewardCycleResult) {
+                throw new Error('Не удалось получить основные данные из контракта');
+            }
+
+            const userDeposits = depositsResult.deposit_amt_deleg?.[normalizedAddress];
+            
+            if (!userDeposits || Object.keys(userDeposits).length === 0) {
+                return {
+                    nodes: [],
+                    totalStaked: 0n,
+                    totalRewards: 0n,
+                    totalNodes: 0,
+                };
+            }
+            
+            const ssnList = ssnListResult.ssnlist;
+            if (!ssnList) throw new Error('Не удалось получить список узлов');
+
+            const rewardQueries: Array<[string, string, any[]]> = [];
+            const stakedSsnAddresses = Object.keys(userDeposits);
+
+            for (const ssnAddr of stakedSsnAddresses) {
+                rewardQueries.push([this.implAddress, 'stake_ssn_per_cycle', [ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'direct_deposit_deleg', [normalizedAddress, ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'buff_deposit_deleg', [normalizedAddress, ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'deleg_stake_per_cycle', [normalizedAddress, ssnAddr]]);
+            }
+
+            const rewardQueryResults = await this.batchQuery(rewardQueries);
+            
+            const rewardData: RewardCalculationData = {
+                lastRewardCycle: parseInt(lastRewardCycleResult.lastrewardcycle),
+                lastWithdrawCycleMap: lastWithdrawResult,
+                stakeSsnPerCycleMaps: {},
+                directDepositMaps: {},
+                buffDepositMaps: {},
+                delegStakePerCycleMaps: {},
+            };
+            
+            let queryIndex = 0;
+            for (const ssnAddr of stakedSsnAddresses) {
+                rewardData.stakeSsnPerCycleMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.directDepositMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.buffDepositMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.delegStakePerCycleMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+            }
+            
+            const rewardsBySsn = await this.calculateRewards(normalizedAddress, userDeposits, rewardData);
+
+            const stakedNodes: NodeStakeInfo[] = [];
+            let totalStaked = 0n;
+            let totalRewards = 0n;
+
+            for (const [ssnAddress, stakeAmountStr] of Object.entries(userDeposits)) {
+                const ssnInfo = ssnList[ssnAddress];
+                
+                if (!ssnInfo) {
+                    continue;
+                }
+
+                const ssnArgs = ssnInfo.arguments;
+                const ssnName = ssnArgs[3] || 'Неизвестно';
+                const commissionRate = BigInt(ssnArgs[7] || '0');
+                const isActive = ssnArgs[0]?.constructor === 'True';
+                const status = isActive ? 'Активен' : 'Неактивен';
+                
+                const stakeAmount = BigInt(stakeAmountStr as string);
+                const rewardsAmount = rewardsBySsn[ssnAddress] || 0n;
+                
+                totalStaked += stakeAmount;
+                totalRewards += rewardsAmount;
+
+                const nodeInfo: NodeStakeInfo = { ssnName, ssnAddress: `0x${ssnAddress}`, stakeAmount, rewardsAmount, commissionRate, status };
+                stakedNodes.push(nodeInfo);
+            }
+
+            return {
+                nodes: stakedNodes,
+                totalStaked: totalStaked,
+                totalRewards: totalRewards,
+                totalNodes: stakedNodes.length,
+            };
+
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+```
+
+`2zilmoon/app/lib/zilliqa-stake-checker.ts`:
+
+```ts
+// Конфигурация для Mainnet
+const MAINNET_CONFIG = {
+    api: 'https://api.zilliqa.com',
+    impl: '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1', // Mainnet staking contract
+    chainId: 1
+};
+
+// Интерфейсы
+export interface NodeStakeInfo {
+    ssnName: string;
+    ssnAddress: string;
+    stakeAmount: bigint;
+    rewardsAmount: bigint;
+    commissionRate: bigint;
+    status: string;
+}
+
+// Этот интерфейс идеально совпадает с форматом ответа для каждого элемента в batch-ответе
+interface BatchQueryResult {
+    id: number;
+    result: any;
+    jsonrpc?: string; // опционально, для полноты
+}
+
+// Интерфейс для данных, необходимых для расчета наград
+interface RewardCalculationData {
+    lastRewardCycle: number;
+    lastWithdrawCycleMap: any;
+    stakeSsnPerCycleMaps: { [ssnAddress: string]: any };
+    directDepositMaps: { [ssnAddress: string]: any };
+    buffDepositMaps: { [ssnAddress: string]: any };
+    delegStakePerCycleMaps: { [ssnAddress: string]: any };
+}
+
+export class ZilliqaStakeChecker {
+    private apiUrl: string;
+    private implAddress: string;
+
+    constructor() {
+        this.apiUrl = MAINNET_CONFIG.api;
+        this.implAddress = MAINNET_CONFIG.impl;
+    }
+
+    private async batchQuery(queries: Array<[string, string, any[]]>): Promise<BatchQueryResult[]> {
+        if (queries.length === 0) return [];
+        const startTime = performance.now();
+
+        const requestBody = queries.map((query, index) => ({
+            jsonrpc: '2.0',
+            id: index + 1,
+            method: 'GetSmartContractSubState',
+            params: [
+                query[0],
+                query[1],
+                query[2]
+            ]
+        }));
+
+        try {
+            console.log(` Выполняется batch запрос (${queries.length} запросов) через fetch (стандарт JSON-RPC 2.0)...`);
+            
+            const response = await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Сетевая ошибка: ${response.status} ${response.statusText}`);
+            }
+
+            const jsonResponse: BatchQueryResult[] | {error: any} = await response.json();
+            
+            if (!Array.isArray(jsonResponse)) {
+                 if (jsonResponse.error) {
+                    throw new Error(`Ошибка RPC: ${jsonResponse.error.message}`);
+                 }
+                throw new Error('Ответ от API не является массивом, как ожидалось для batch-запроса.');
+            }
+
+            const endTime = performance.now();
+            console.log(`✅ Batch запрос выполнен за ${((endTime - startTime) / 1000).toFixed(2)}с`);
+            
+            return jsonResponse.sort((a, b) => a.id - b.id);
+            
+        } catch (error) {
+            console.error('❌ Ошибка в batch запросе:', error);
+            throw error;
+        }
+    }
+
+    private normalizeAddress(address: string): string {
+        if (!/^0x[0-9a-f]{40}$/i.test(address)) {
+            throw new Error(`Неверный формат адреса: ${address}. Ожидается hex-адрес формата 0x...`);
+        }
+        return address.toLowerCase();
+    }
+
+    private async calculateRewards(normalizedAddress: string, userDeposits: { [ssn: string]: string }, rewardData: RewardCalculationData): Promise<{ [ssnAddress: string]: bigint }> {
+        console.log(`
+ Расчет невостребованных наград (в Qa)...`);
+        const rewardsBySsn: { [ssnAddress: string]: bigint } = {};
+
+        for (const ssnAddress of Object.keys(userDeposits)) {
+            let totalSsnReward = 0n;
+
+            try {
+                const lastWithdrawCycle = parseInt(rewardData.lastWithdrawCycleMap?.last_withdraw_cycle_deleg?.[normalizedAddress]?.[ssnAddress] || '0');
+                const cyclesToCalculate = [];
+                for (let i = lastWithdrawCycle + 1; i <= rewardData.lastRewardCycle; i++) {
+                    cyclesToCalculate.push(i);
+                }
+
+                if (cyclesToCalculate.length === 0) {
+                    rewardsBySsn[ssnAddress] = 0n;
+                    continue;
+                }
+
+                const delegStakePerCycleMap = new Map<number, bigint>();
+                const directMap = rewardData.directDepositMaps[ssnAddress]?.direct_deposit_deleg?.[normalizedAddress]?.[ssnAddress] || {};
+                const buffMap = rewardData.buffDepositMaps[ssnAddress]?.buff_deposit_deleg?.[normalizedAddress]?.[ssnAddress] || {};
+
+                for (let cycle = 1; cycle <= rewardData.lastRewardCycle; cycle++) {
+                    const c1 = cycle - 1;
+                    const c2 = cycle - 2;
+                    const dir_amt = BigInt(directMap[c1.toString()] || 0);
+                    const buf_amt = BigInt(buffMap[c2.toString()] || 0);
+                    const last_amt = delegStakePerCycleMap.get(c1) || 0n;
+                    const total_amt = last_amt + dir_amt + buf_amt;
+                    delegStakePerCycleMap.set(cycle, total_amt);
+                }
+
+                const ssnCycleInfoMap = rewardData.stakeSsnPerCycleMaps[ssnAddress]?.stake_ssn_per_cycle?.[ssnAddress] || {};
+
+                for (const cycle of cyclesToCalculate) {
+                    const cycleInfo = ssnCycleInfoMap[cycle];
+                    if (!cycleInfo) continue;
+
+                    const totalRewardsForCycle = BigInt(cycleInfo.arguments[1]);
+                    const totalStakeForCycle = BigInt(cycleInfo.arguments[0]);
+                    const delegStakeForCycle = delegStakePerCycleMap.get(cycle);
+
+                    if (delegStakeForCycle && delegStakeForCycle > 0n && totalStakeForCycle > 0n) {
+                        const cycleReward = (delegStakeForCycle * totalRewardsForCycle) / totalStakeForCycle;
+                        totalSsnReward += cycleReward;
+                    }
+                }
+            } catch (e) {
+                console.error(`- Ошибка при расчете наград для узла ${ssnAddress}:`, e);
+                totalSsnReward = 0n;
+            }
+
+            rewardsBySsn[ssnAddress] = totalSsnReward;
+        }
+        
+        console.log(`✅ Расчет наград завершен.`);
+        return rewardsBySsn;
+    }
+
+    async getStakedNodes(walletAddress: string): Promise<NodeStakeInfo[]> {
+        console.log(`
+ Поиск стейков для адреса: ${walletAddress}`);
+        const normalizedAddress = this.normalizeAddress(walletAddress);
+        console.log(` Нормализованный адрес: ${normalizedAddress}`);
+
+        const initialQueries: Array<[string, string, any[]]> = [
+            [this.implAddress, 'deposit_amt_deleg', [normalizedAddress]],
+            [this.implAddress, 'ssnlist', []],
+            [this.implAddress, 'lastrewardcycle', []],
+            [this.implAddress, 'last_withdraw_cycle_deleg', [normalizedAddress]],
+        ];
+
+        try {
+            const initialResults = await this.batchQuery(initialQueries);
+            
+            const depositsResult = initialResults[0]?.result;
+            const ssnListResult = initialResults[1]?.result;
+            const lastRewardCycleResult = initialResults[2]?.result;
+            const lastWithdrawResult = initialResults[3]?.result;
+
+            if (!depositsResult || !ssnListResult || !lastRewardCycleResult) {
+                throw new Error('Не удалось получить основные данные из контракта');
+            }
+
+            const userDeposits = depositsResult.deposit_amt_deleg?.[normalizedAddress];
+            
+            if (!userDeposits || Object.keys(userDeposits).length === 0) {
+                console.log('❌ У данного адреса нет активных стейков');
+                return [];
+            }
+            
+            const ssnList = ssnListResult.ssnlist;
+            if (!ssnList) throw new Error('Не удалось получить список узлов');
+
+            const rewardQueries: Array<[string, string, any[]]> = [];
+            const stakedSsnAddresses = Object.keys(userDeposits);
+
+            for (const ssnAddr of stakedSsnAddresses) {
+                rewardQueries.push([this.implAddress, 'stake_ssn_per_cycle', [ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'direct_deposit_deleg', [normalizedAddress, ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'buff_deposit_deleg', [normalizedAddress, ssnAddr]]);
+                rewardQueries.push([this.implAddress, 'deleg_stake_per_cycle', [normalizedAddress, ssnAddr]]);
+            }
+
+            const rewardQueryResults = await this.batchQuery(rewardQueries);
+            
+            const rewardData: RewardCalculationData = {
+                lastRewardCycle: parseInt(lastRewardCycleResult.lastrewardcycle),
+                lastWithdrawCycleMap: lastWithdrawResult,
+                stakeSsnPerCycleMaps: {},
+                directDepositMaps: {},
+                buffDepositMaps: {},
+                delegStakePerCycleMaps: {},
+            };
+            
+            let queryIndex = 0;
+            for (const ssnAddr of stakedSsnAddresses) {
+                rewardData.stakeSsnPerCycleMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.directDepositMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.buffDepositMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+                rewardData.delegStakePerCycleMaps[ssnAddr] = rewardQueryResults[queryIndex++]?.result;
+            }
+            
+            const rewardsBySsn = await this.calculateRewards(normalizedAddress, userDeposits, rewardData);
+
+            console.log(`
+ Найдено стейков на ${Object.keys(userDeposits).length} узлах:`);
+            console.log('='.repeat(81));
+
+            const stakedNodes: NodeStakeInfo[] = [];
+            let totalStaked = 0n;
+            let totalRewards = 0n;
+
+            for (const [ssnAddress, stakeAmountStr] of Object.entries(userDeposits)) {
+                const ssnInfo = ssnList[ssnAddress];
+                
+                if (!ssnInfo) {
+                    console.log(`⚠️  Узел 0x${ssnAddress} не найден в списке`);
+                    continue;
+                }
+
+                const ssnArgs = ssnInfo.arguments;
+                const ssnName = ssnArgs[3] || 'Неизвестно';
+                const commissionRate = BigInt(ssnArgs[7] || '0');
+                const isActive = ssnArgs[0]?.constructor === 'True';
+                const status = isActive ? 'Активен' : 'Неактивен';
+                
+                const stakeAmount = BigInt(stakeAmountStr as string);
+                const rewardsAmount = rewardsBySsn[ssnAddress] || 0n;
+                
+                totalStaked += stakeAmount;
+                totalRewards += rewardsAmount;
+
+                const nodeInfo: NodeStakeInfo = { ssnName, ssnAddress: `0x${ssnAddress}`, stakeAmount, rewardsAmount, commissionRate, status };
+                stakedNodes.push(nodeInfo);
+
+                console.log(`
+ Узел: ${ssnName}`);
+                console.log(`     Адрес: 0x${ssnAddress}`);
+                console.log(`     Стейк (Qa): ${stakeAmount.toString()}`);
+                console.log(`     Награды (Qa): ${rewardsAmount.toString()}`);
+                console.log(`     Комиссия (10^7): ${commissionRate.toString()}`);
+                console.log(`     Статус: ${status}`);
+            }
+
+            console.log(`
+${'='.repeat(81)}`);
+            console.log(` ОБЩАЯ СТАТИСТИКА:`);
+            console.log(`     Всего узлов со стейком: ${stakedNodes.length}`);
+            console.log(`     Общая сумма стейка (Qa): ${totalStaked.toString()}`);
+            console.log(`     Общая сумма невостребованных наград (Qa): ${totalRewards.toString()}`);
+            console.log(`     Сеть: Mainnet`);
+            console.log('='.repeat(81));
+
+            return stakedNodes;
+
+        } catch (error) {
+            console.error('❌ Ошибка при получении стейков:', error);
+            throw error;
+        }
+    }
+}
+```
+
+`2zilmoon/app/lib/zilpay-base.ts`:
+
+```ts
+import { ZilPay } from "@zilliqa-js/zilliqa";
+
+export class ZilPayBase {
+  public zilpay = () => new ZilPay();
+}
+
+```
+
+`2zilmoon/app/lib/zilpay.ts`:
+
+```ts
+'use client';
+import { Wallet } from './types';
+
+declare global {
+  interface Window {
+    zilPay: any;
+  }
+}
+
+export const zilPay = {
+  crypto: {
+    fromBech32Address: (bech32Address: string) => {
+      if (typeof window === 'undefined' || !window.zilPay || !window.zilPay.crypto) {
+        throw new Error('ZilPay crypto object not available.');
+      }
+      return window.zilPay.crypto.fromBech32Address(bech32Address);
+    },
+  },
+  connect: async (): Promise<Wallet | null> => {
+    try {
+      const zilPay = await getZilPay();
+      const connected = await zilPay.wallet.connect();
+      if (connected && zilPay.wallet.defaultAccount) {
+        return zilPay.wallet.defaultAccount;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to connect to ZilPay:', error);
+      return null;
+    }
+  },
+  observable: (callback: (wallet: Wallet | null) => void) => {
+    getZilPay().then((zilPay) => {
+      if (zilPay.wallet.defaultAccount) {
+        callback(zilPay.wallet.defaultAccount);
+      }
+      zilPay.wallet.observableAccount().subscribe((account: Wallet) => {
+        callback(account);
+      });
+    });
+  },
+};
+
+function getZilPay(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      return reject('Window is not defined');
+    }
+    let k = 0;
+    const i = setInterval(() => {
+      if (k >= 10) {
+        clearInterval(i);
+        return reject(new Error(`ZilPay is not installed.`));
+      }
+      if (typeof window.zilPay !== `undefined`) {
+        clearInterval(i);
+        return resolve(window.zilPay);
+      }
+      k++;
+    }, 100);
+  });
+}
+
+```
+
+`2zilmoon/app/page.tsx`:
+
+```tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useWallet } from './store/wallet';
+import { ZilPayConnect } from './components/ZilPayConnect';
+import Header from './components/Header';
+import StakingNode from './components/StakingNode';
+import styles from './page.module.css';
+import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
+
+const StakingPage = () => {
+  const { wallet } = useWallet();
+  const [manualWalletAddress, setManualWalletAddress] = useState<string>('');
+  const [stakingSummary, setStakingSummary] = useState<StakedNodesSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStakingData = async (address: string) => {
+    if (!address) {
+      setError('Please enter a wallet address or connect ZilPay.');
+      setStakingSummary(null);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setStakingSummary(null);
+
+    try {
+      const checker = new ZilliqaStakeChecker();
+      const data = await checker.getStakedNodes(address);
+      setStakingSummary(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch staking data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (wallet && wallet.bech32) {
+      try {
+        fetchStakingData(wallet.base16);
+      } catch (e: any) {
+        setError(`Error converting address: ${e.message}`);
+      }
+    } else {
+      setStakingSummary(null);
+    }
+  }, [wallet]);
+
+  const handleManualAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setManualWalletAddress(event.target.value);
+  };
+
+  const handleManualFetch = () => {
+    fetchStakingData(manualWalletAddress);
+  };
+
+  const formatNumber = (value: bigint) => {
+    const str = value.toString();
+    if (str.length > 12) {
+      return `${str.substring(0, 6)}...${str.substring(str.length - 3)}`;
+    }
+    return str;
+  };
+
+  return (
+    <div className={styles.container}>
+      <Header />
+      <main className={styles.main}>
+        <p className={styles.description}>Zilliqa Staking Dashboard</p>
+
+        <div className={styles.zilpayConnectContainer}>
+          <ZilPayConnect />
+          {wallet && wallet.bech32 && (
+            <p className={styles.connectedAddress}>Connected: {wallet.bech32}</p>
+          )}
+        </div>
+
+        {!wallet && (
+          <div className={styles.inputContainer}>
+            <input
+              type="text"
+              placeholder="Enter Zilliqa Wallet Address (0x...)"
+              value={manualWalletAddress}
+              onChange={handleManualAddressChange}
+              className={styles.addressInput}
+            />
+            <button onClick={handleManualFetch} disabled={loading} className={styles.fetchButton}>
+              {loading ? 'Fetching...' : 'Get Staking Info'}
+            </button>
+          </div>
+        )}
+
+        {error && <p className={styles.error}>{error}</p>}
+
+        {stakingSummary && (
+          <div className={styles.summaryContainer}>
+            <h2>Staking Portfolio</h2>
+            
+            <div className={styles.summaryStats}>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Total Staked</div>
+                <div className={styles.statValue} title={`${stakingSummary.totalStaked.toString()} Qa`}>
+                  {formatNumber(stakingSummary.totalStaked)} Qa
+                </div>
+              </div>
+              
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Unclaimed Rewards</div>
+                <div className={styles.statValue} title={`${stakingSummary.totalRewards.toString()} Qa`}>
+                  {formatNumber(stakingSummary.totalRewards)} Qa
+                </div>
+              </div>
+              
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Active Nodes</div>
+                <div className={styles.statValue}>
+                  {stakingSummary.totalNodes}
+                </div>
+              </div>
+            </div>
+
+            {stakingSummary.nodes.length > 0 ? (
+              <div className={styles.grid}>
+                {stakingSummary.nodes.map((node) => (
+                  <StakingNode key={node.ssnAddress} node={node} />
+                ))}
+              </div>
+            ) : (
+              <p className={styles.noStakes}>No active stakes found for this address.</p>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default StakingPage;
+
+
+```
+
+`2zilmoon/app/store/settings.ts`:
+
+```ts
+import { Store } from 'react-stores';
+
+export enum Themes {
+  Light = 'light',
+  Dark = 'dark',
+}
+
+interface SettingsState {
+  theme: Themes;
+}
+
+export const $settings = new Store<SettingsState>({
+  theme: Themes.Light,
+});
+
+export function updateSettingsStore(newState: SettingsState) {
+  $settings.setState(newState);
+}
+
+```
+
+`2zilmoon/app/store/transactions.ts`:
+
+```ts
+import createStore from 'react-stores';
+
+export type Tx = {
+  hash: string;
+  confirmed: boolean;
+  error: boolean;
+};
+
+export type Txs = {
+  transactions: Tx[];
+};
+
+const initState: Txs = {
+  transactions: [],
+};
+
+export const $transactions = createStore(initState);
+
+export function updateTransactions(key: string, transactions: Tx[]) {
+  const state = $transactions.state;
+  state.transactions = transactions;
+  $transactions.setState(state);
+  window.localStorage.setItem(key, JSON.stringify(state));
+}
+
+```
+
+`2zilmoon/app/store/wallet.tsx`:
+
+```tsx
+'use client';
+import { Wallet } from '../lib/types';
+import { createContext, useContext, useState, ReactNode } from 'react';
+
+interface WalletState {
+  wallet: Wallet | null;
+  setWallet: (wallet: Wallet | null) => void;
+}
+
+const WalletContext = createContext<WalletState | undefined>(undefined);
+
+export const WalletProvider = ({ children }: { children: ReactNode }) => {
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+
+  return (
+    <WalletContext.Provider value={{ wallet, setWallet }}>
+      {children}
+    </WalletContext.Provider>
+  );
+};
+
+export const useWallet = () => {
+  const context = useContext(WalletContext);
+  if (context === undefined) {
+    throw new Error('useWallet must be used within a WalletProvider');
+  }
+  return context;
+};
+
+```
+
+`2zilmoon/next.config.ts`:
+
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+```

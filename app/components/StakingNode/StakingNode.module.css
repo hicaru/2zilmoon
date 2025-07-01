@@ -1,14 +1,19 @@
 .card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  padding: 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 0.6s ease-out;
+  max-width: 380px;
+  width: 100%;
+}
+
+.card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .card::before {
@@ -17,237 +22,214 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #4facfe, #00f2fe, #4facfe);
-  background-size: 200% 100%;
-  animation: gradient 3s ease infinite;
+  height: 3px;
+  background: var(--primary-gradient);
 }
 
-@keyframes gradient {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.card:hover {
-  transform: translateY(-8px);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
 .nodeName {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: white;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  word-break: break-word;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.statusActive {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.statusInactive {
+  background: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
 .info {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .infoItem {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
-
-.infoItem:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  align-items: center;
+  gap: 1rem;
 }
 
 .infoLabel {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-  margin-right: 1rem;
+  min-width: fit-content;
 }
 
 .infoValue {
-  color: white;
+  font-size: 0.875rem;
   font-weight: 600;
-  font-family: 'Courier New', monospace;
+  color: var(--text-primary);
   text-align: right;
   word-break: break-all;
-  font-size: 0.9rem;
-  line-height: 1.4;
 }
 
 .address {
-  font-size: 0.8rem;
-  opacity: 0.9;
-  background: rgba(0, 0, 0, 0.2);
+  font-family: 'Monaco', 'Menlo', monospace;
+  background: rgba(102, 126, 234, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  display: inline-block;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .amount {
-  color: #4facfe !important;
+  color: var(--text-accent);
   font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .rewards {
-  color: #00f2fe !important;
+  color: #4ade80;
   font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.statusActive {
-  background: linear-gradient(135deg, #00d4aa, #00f2fe);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 212, 170, 0.3);
-}
-
-.statusInactive {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  color: white;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+.commission {
+  color: var(--text-secondary);
 }
 
 .buttonContainer {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
+  gap: 0.75rem;
 }
 
 .button {
   flex: 1;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--border-radius);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   position: relative;
   overflow: hidden;
 }
 
-.button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.button:hover::before {
-  left: 100%;
-}
-
 .claimButton {
-  background: linear-gradient(135deg, #00d4aa, #00f2fe);
+  background: var(--success-gradient);
   color: white;
-  box-shadow: 0 4px 15px rgba(0, 212, 170, 0.4);
+  box-shadow: var(--shadow-sm);
 }
 
 .claimButton:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 212, 170, 0.6);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .unstakeButton {
-  background: linear-gradient(135deg, #ff9a9e, #fecfef);
-  color: #2d3748;
-  box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);
+  background: var(--secondary-gradient);
+  color: white;
+  box-shadow: var(--shadow-sm);
 }
 
 .unstakeButton:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(255, 154, 158, 0.6);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-.button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
+.secondaryButton {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
-/* Спец стили для больших чисел */
-.largeNumber {
-  font-size: 0.8rem;
-  line-height: 1.2;
+.secondaryButton:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--text-accent);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.metric {
+  text-align: center;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricValue {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {
   .card {
-    padding: 1.5rem;
+    padding: 1.25rem;
+    max-width: none;
   }
   
-  .nodeName {
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .statusBadge {
+    align-self: flex-start;
   }
   
   .infoItem {
     flex-direction: column;
-    gap: 0.5rem;
     align-items: stretch;
+    gap: 0.25rem;
   }
   
   .infoValue {
     text-align: left;
   }
   
-  .address {
-    max-width: 100%;
-  }
-  
   .buttonContainer {
     flex-direction: column;
   }
   
-  .button {
-    padding: 0.875rem 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .infoValue {
-    font-size: 0.8rem;
-  }
-  
-  .largeNumber {
-    font-size: 0.7rem;
+  .metrics {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 }
 

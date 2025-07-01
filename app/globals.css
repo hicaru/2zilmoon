@@ -4,86 +4,118 @@
   margin: 0;
 }
 
-html,
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  
+  --bg-primary: #0f0f23;
+  --bg-secondary: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-card-hover: #1e2749;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-accent: #667eea;
+  
+  --border-color: #2a2a3e;
+  --border-radius: 16px;
+  --border-radius-lg: 24px;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 32px rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-accent: #667eea;
+  
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 32px rgba(102, 126, 234, 0.15);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  color: #2d3748;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-body {
-  background-attachment: fixed;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-* {
-  box-sizing: border-box;
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Улучшенные скроллбары */
-::-webkit-scrollbar {
-  width: 8px;
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Анимации */
 @keyframes fadeIn {
-  from {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
     opacity: 0;
     transform: translateY(20px);
   }
-  to {
+  to { 
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes slideIn {
-  from {
+@keyframes scaleIn {
+  from { 
     opacity: 0;
-    transform: translateX(-20px);
+    transform: scale(0.9);
   }
-  to {
+  to { 
     opacity: 1;
-    transform: translateX(0);
+    transform: scale(1);
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
-/* Утилиты */
-.animate-fadeIn {
-  animation: fadeIn 0.6s ease-out;
-}
-
-.animate-slideIn {
-  animation: slideIn 0.6s ease-out;
-}
-
-.animate-pulse {
-  animation: pulse 2s infinite;
+.loading-pulse {
+  animation: pulse 2s ease-in-out infinite;
 }
 

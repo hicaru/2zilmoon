@@ -1,39 +1,53 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useWallet } from '../../store/wallet';
 import { zilPay } from '../../lib/zilpay';
+import { formatAddress } from '../../lib/formatters';
 import styles from './ZilPayConnect.module.css';
 
 export const ZilPayConnect = () => {
   const { wallet, setWallet } = useWallet();
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     zilPay.observable(setWallet);
   }, [setWallet]);
 
   const handleConnect = async () => {
-    const connectedWallet = await zilPay.connect();
-    if (connectedWallet) {
-      setWallet(connectedWallet);
+    if (connecting) return;
+    
+    setConnecting(true);
+    try {
+      const connectedWallet = await zilPay.connect();
+      if (connectedWallet) {
+        setWallet(connectedWallet);
+      }
+    } catch (error) {
+      console.error('Failed to connect:', error);
+    } finally {
+      setConnecting(false);
     }
   };
 
-  const trimAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
-
   return (
-    <div>
+    <button 
+      className={`${styles.connectButton} ${
+        wallet ? styles.connected : connecting ? styles.connecting : ''
+      }`}
+      onClick={handleConnect}
+      disabled={connecting}
+    >
       {wallet ? (
-        <button className={styles.connectButton}>
-          {trimAddress(wallet.bech32)}
-        </button>
+        <>
+          <span className={styles.statusDot}></span>
+          {formatAddress(wallet.bech32)}
+        </>
+      ) : connecting ? (
+        'Connecting...'
       ) : (
-        <button className={styles.connectButton} onClick={handleConnect}>
-          Connect
-        </button>
+        'Connect Wallet'
       )}
-    </div>
+    </button>
   );
 };
+
