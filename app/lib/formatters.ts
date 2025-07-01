@@ -39,6 +39,8 @@ export const formatAddress = (address: string, startChars: number = 6, endChars:
   if (!address || address.length <= startChars + endChars) {
     return address;
   }
+
+  address = address.replace("0x", "");
   return `${address.substring(0, startChars)}...${address.substring(address.length - endChars)}`;
 };
 

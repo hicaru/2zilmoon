@@ -19,6 +19,7 @@ Source Tree:
 │   │   └── ui
 │   │       ├── AccountCard.tsx
 │   │       ├── Modal.tsx
+│   │       ├── Skeleton.tsx
 │   │       ├── Toggle.tsx
 │   │       └── TxCard.tsx
 │   ├── layout.tsx
@@ -55,8 +56,7 @@ const Header = () => {
 
   const toggleTheme = () => {
     const newTheme = settings.theme === Themes.Light ? Themes.Dark : Themes.Light;
-    updateSettingsStore({ ...settings, theme: newTheme });
-    document.documentElement.setAttribute('data-theme', newTheme);
+    updateSettingsStore({ theme: newTheme });
   };
 
   return (
@@ -88,18 +88,38 @@ export default Header;
 ```tsx
 'use client';
 
+import { useState } from 'react';
 import styles from './StakingNode.module.css';
 import { NodeStakeInfo } from '../../lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit, formatAddress, formatCommissionRate } from '../../lib/formatters';
 
 interface StakingNodeProps {
   node: NodeStakeInfo;
-  onClaim: (ssnAddress: string) => void;
+  onClaim: (ssnAddress: string) => Promise<void>;
   onUnstake: () => void;
+  isClaimLoading?: boolean;
 }
 
-const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) => {
+const StakingNode: React.FC<StakingNodeProps> = ({ 
+  node, 
+  onClaim, 
+  onUnstake, 
+  isClaimLoading = false 
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
   const hasRewards = node.rewardsAmount > 0n;
+
+  const handleClaimClick = async () => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      await onClaim(node.ssnAddress);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className={`${styles.card} animate-scale-in`}>
       <div className={styles.header}>
@@ -153,11 +173,27 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <button className={`${styles.button} ${styles.claimButton}`} onClick={() => onClaim(node.ssnAddress)}>
-            Claim Rewards
+          <button 
+            className={`${styles.button} ${styles.claimButton} ${
+              isProcessing || isClaimLoading ? styles.loading : ''
+            }`} 
+            onClick={handleClaimClick}
+            disabled={isProcessing || isClaimLoading}
+          >
+            {isProcessing || isClaimLoading ? (
+              <span className={styles.loadingContent}>
+                <span className={styles.spinner}></span>
+                Processing...
+              </span>
+            ) : (
+              'Claim Rewards'
+            )}
           </button>
         ) : (
-          <button className={`${styles.button} ${styles.unstakeButton}`} onClick={onUnstake}>
+          <button 
+            className={`${styles.button} ${styles.unstakeButton}`} 
+            onClick={onUnstake}
+          >
             Unstake
           </button>
         )}
@@ -167,6 +203,7 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 };
 
 export default StakingNode;
+
 
 ```
 
@@ -192,7 +229,7 @@ export const ThemeInitializer = () => {
 
 ```tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useWallet } from '../../store/wallet';
 import { zilPay } from '../../lib/zilpay';
 import { formatAddress } from '../../lib/formatters';
@@ -201,10 +238,14 @@ import styles from './ZilPayConnect.module.css';
 export const ZilPayConnect = () => {
   const { wallet, setWallet } = useWallet();
   const [connecting, setConnecting] = useState(false);
+  const observerInitialized = useRef(false);
 
   useEffect(() => {
-    zilPay.observable((account)  => {
-      if (wallet?.base16 != account?.base16) {
+    if (observerInitialized.current) return;
+    
+    observerInitialized.current = true;
+    zilPay.observable((account) => {
+      if (account?.base16 != wallet?.base16) {
         setWallet(account);
       }
     });
@@ -216,9 +257,7 @@ export const ZilPayConnect = () => {
     setConnecting(true);
     try {
       const connectedWallet = await zilPay.connect();
-      if (connectedWallet) {
-        setWallet(connectedWallet);
-      }
+      setWallet(connectedWallet);
     } catch (error) {
       console.error('Failed to connect:', error);
     } finally {
@@ -407,6 +446,102 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({ onClose, children }) =
     </div>
   );
 };
+
+```
+
+`2zilmoon/app/components/ui/Skeleton.tsx`:
+
+```tsx
+import React from 'react';
+import styles from './Skeleton.module.css';
+
+interface SkeletonProps {
+  className?: string;
+  width?: string | number;
+  height?: string | number;
+  borderRadius?: string;
+  count?: number;
+}
+
+export const Skeleton: React.FC<SkeletonProps> = ({
+  className = '',
+  width,
+  height = '1rem',
+  borderRadius = '4px',
+  count = 1,
+}) => {
+  const skeletonStyle = {
+    width,
+    height,
+    borderRadius,
+  };
+
+  if (count === 1) {
+    return (
+      <div 
+        className={`${styles.skeleton} ${className}`}
+        style={skeletonStyle}
+      />
+    );
+  }
+
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <div
+          key={index}
+          className={`${styles.skeleton} ${className}`}
+          style={skeletonStyle}
+        />
+      ))}
+    </>
+  );
+};
+
+export const SkeletonCard: React.FC = () => (
+  <div className={styles.skeletonCard}>
+    <div className={styles.cardHeader}>
+      <Skeleton height="24px" width="60%" />
+      <Skeleton height="20px" width="80px" borderRadius="20px" />
+    </div>
+    <div className={styles.cardInfo}>
+      <div className={styles.infoRow}>
+        <Skeleton height="16px" width="40%" />
+        <Skeleton height="16px" width="50%" />
+      </div>
+      <div className={styles.infoRow}>
+        <Skeleton height="16px" width="35%" />
+        <Skeleton height="16px" width="45%" />
+      </div>
+    </div>
+    <div className={styles.cardMetrics}>
+      <div className={styles.metric}>
+        <Skeleton height="14px" width="60px" />
+        <Skeleton height="20px" width="80px" />
+      </div>
+      <div className={styles.metric}>
+        <Skeleton height="14px" width="60px" />
+        <Skeleton height="20px" width="80px" />
+      </div>
+    </div>
+    <Skeleton height="40px" width="100%" borderRadius="8px" />
+  </div>
+);
+
+export const SkeletonSummary: React.FC = () => (
+  <div className={styles.skeletonSummary}>
+    <Skeleton height="32px" width="300px" className={styles.title} />
+    <div className={styles.statsGrid}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className={styles.statCard}>
+          <Skeleton height="16px" width="80px" />
+          <Skeleton height="28px" width="120px" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 
 ```
 
@@ -1256,10 +1391,11 @@ function getZilPay(): Promise<any> {
 ```tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from './store/wallet';
 import Header from './components/Header';
 import StakingNode from './components/StakingNode';
+import { SkeletonCard, SkeletonSummary } from './components/ui/Skeleton';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit } from './lib/formatters';
@@ -1272,46 +1408,63 @@ const StakingPage = () => {
   const [stakingSummary, setStakingSummary] = useState<StakedNodesSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [claimingNodes, setClaimingNodes] = useState<Set<string>>(new Set());
+  const currentAddressRef = useRef<string>('');
   const stakingContractAddress = '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1';
 
-  const fetchStakingData = async (address: string) => {
-    if (!address) {
-      setError('Please enter a wallet address or connect ZilPay.');
-      setStakingSummary(null);
+  const fetchStakingData = useCallback(async (address: string) => {
+    if (!address || address === currentAddressRef.current) {
       return;
     }
 
+    if (currentAddressRef.current !== address) {
+      setStakingSummary(null);
+      setError(null);
+    }
+
+    currentAddressRef.current = address;
     setLoading(true);
-    setError(null);
-    setStakingSummary(null);
 
     try {
       const checker = new ZilliqaStakeChecker();
       const data = await checker.getStakedNodes(address);
-      setStakingSummary(data);
+      
+      if (currentAddressRef.current === address) {
+        setStakingSummary(data);
+        setError(null);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch staking data.');
+      if (currentAddressRef.current === address) {
+        setError(err.message || 'Failed to fetch staking data.');
+        setStakingSummary(null);
+      }
     } finally {
-      setLoading(false);
+      if (currentAddressRef.current === address) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (wallet && wallet.base16) {
+    if (wallet?.base16) {
       fetchStakingData(wallet.base16);
       setManualWalletAddress('');
     } else {
+      currentAddressRef.current = '';
       setStakingSummary(null);
+      setError(null);
     }
-  }, [wallet?.base16]); // ИЗМЕНЕНИЕ: Зависимость изменена на wallet?.base16
+  }, [wallet?.base16, fetchStakingData]);
 
-  const handleClaimRewards = async (ssnAddress: string) => {
+  const handleClaimRewards = useCallback(async (ssnAddress: string) => {
     if (!wallet) {
       setError('Please connect your wallet to claim rewards.');
       return;
     }
-    setLoading(true);
+
+    setClaimingNodes(prev => new Set(prev).add(ssnAddress));
     setError(null);
+
     try {
       const payload = {
         _tag: 'WithdrawStakeRewards',
@@ -1323,40 +1476,68 @@ const StakingPage = () => {
           },
         ],
       };
-      const tx = await zilPay.callTransaction(stakingContractAddress, payload,undefined, undefined, 100000);
+
+      const tx = await zilPay.callTransaction(
+        stakingContractAddress, 
+        payload, 
+        undefined, 
+        undefined, 
+        100000
+      );
+
       if (tx.ID) {
         updateTransactions(wallet.bech32, [
           { hash: tx.ID, confirmed: false, error: false },
         ]);
-        alert(`Transaction sent: ${tx.ID}`);
+        
+        if (wallet.base16) {
+          setTimeout(() => fetchStakingData(wallet.base16), 2000);
+        }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to send transaction.');
+      // Обработка отмены пользователем и других ошибок
+      console.error('Transaction failed or cancelled:', err);
+      if (err.message && !err.message.includes('User rejected')) {
+        setError(err.message || 'Failed to send transaction.');
+      }
     } finally {
-      setLoading(false);
+      // Обязательно убираем состояние загрузки
+      setClaimingNodes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ssnAddress);
+        return newSet;
+      });
     }
-  };
+  }, [wallet, fetchStakingData]);
 
-  const handleManualAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleManualAddressChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setManualWalletAddress(event.target.value);
-  };
+  }, []);
 
-  const handleManualFetch = () => {
-    fetchStakingData(manualWalletAddress);
-  };
+  const handleManualFetch = useCallback(() => {
+    if (manualWalletAddress.trim()) {
+      fetchStakingData(manualWalletAddress.trim());
+    }
+  }, [manualWalletAddress, fetchStakingData]);
+
+  // Функция для рендера скелетной загрузки
+  const renderSkeletonLoading = () => (
+    <div className={`${styles.summaryContainer} animate-slide-up`}>
+      <SkeletonSummary />
+      <div className={styles.grid}>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} style={{ animationDelay: `${index * 0.1}s` }}>
+            <SkeletonCard />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className={styles.container}>
       <Header />
       <main className={styles.main}>
-        <div className={`${styles.hero} animate-fade-in`}>
-          <h1 className={styles.title}>2zilmoon</h1>
-          <p className={styles.description}>
-            Seamless Zilliqa Staking Management - Track, Claim, and Migrate Your Stakes
-          </p>
-        </div>
-
-        
         {!wallet && (
           <div className={`${styles.inputContainer} animate-slide-up`}>
             <input
@@ -1368,7 +1549,7 @@ const StakingPage = () => {
             />
             <button
               onClick={handleManualFetch}
-              disabled={loading}
+              disabled={loading || !manualWalletAddress.trim()}
               className={styles.fetchButton}
             >
               {loading ? 'Loading...' : 'Check Stakes'}
@@ -1378,14 +1559,9 @@ const StakingPage = () => {
 
         {error && <div className={`${styles.error} animate-scale-in`}>{error}</div>}
 
-        {loading && (
-          <div className={`${styles.loading} animate-fade-in`}>
-            <div className={styles.loadingSpinner}></div>
-            <p>Fetching your staking data...</p>
-          </div>
-        )}
+        {loading && renderSkeletonLoading()}
 
-        {stakingSummary && (
+        {!loading && stakingSummary && (
           <div className={`${styles.summaryContainer} animate-slide-up`}>
             <h2 className={styles.summaryTitle}>Your Staking Portfolio</h2>
 
@@ -1422,8 +1598,9 @@ const StakingPage = () => {
                   <div key={node.ssnAddress} style={{ animationDelay: `${index * 0.1}s` }}>
                     <StakingNode
                       node={node}
-                      onClaim={() => handleClaimRewards(node.ssnAddress)}
+                      onClaim={handleClaimRewards}
                       onUnstake={() => console.log('Unstake from', node.ssnName)}
+                      isClaimLoading={claimingNodes.has(node.ssnAddress)}
                     />
                   </div>
                 ))}
@@ -1442,6 +1619,7 @@ const StakingPage = () => {
 };
 
 export default StakingPage;
+
 
 ```
 
@@ -1462,7 +1640,13 @@ interface SettingsState {
 const getInitialTheme = (): Themes => {
   if (typeof window !== 'undefined') {
     const savedTheme = window.localStorage.getItem('theme') as Themes;
-    return savedTheme || Themes.Light;
+    if (savedTheme && Object.values(Themes).includes(savedTheme)) {
+      return savedTheme;
+    }
+    // Проверяем системную тему
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return Themes.Dark;
+    }
   }
   return Themes.Light;
 };
@@ -1480,11 +1664,13 @@ export function updateSettingsStore(newState: SettingsState) {
 }
 
 export function initTheme() {
-    if (typeof window !== 'undefined') {
-        const theme = getInitialTheme();
-        document.documentElement.setAttribute('data-theme', theme);
-    }
+  if (typeof window !== 'undefined') {
+    const theme = getInitialTheme();
+    $settings.setState({ theme });
+    document.documentElement.setAttribute('data-theme', theme);
+  }
 }
+
 
 ```
 
@@ -1522,7 +1708,7 @@ export function updateTransactions(key: string, transactions: Tx[]) {
 ```tsx
 'use client';
 import { Wallet } from '../lib/types';
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface WalletState {
   wallet: Wallet | null;
@@ -1532,7 +1718,16 @@ interface WalletState {
 const WalletContext = createContext<WalletState | undefined>(undefined);
 
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet, setWalletState] = useState<Wallet | null>(null);
+
+  const setWallet = useCallback((newWallet: Wallet | null) => {
+    setWalletState(prevWallet => {
+      if (!newWallet && !prevWallet) return prevWallet;
+      if (!newWallet || !prevWallet) return newWallet;
+      if (newWallet.base16 === prevWallet.base16) return prevWallet;
+      return newWallet;
+    });
+  }, []);
 
   return (
     <WalletContext.Provider value={{ wallet, setWallet }}>
@@ -1548,6 +1743,7 @@ export const useWallet = () => {
   }
   return context;
 };
+
 
 ```
 
