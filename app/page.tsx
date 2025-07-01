@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet } from './store/wallet';
 import Header from './components/Header';
 import StakingNode from './components/StakingNode';
+import { SkeletonCard, SkeletonSummary } from './components/ui/Skeleton';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit } from './lib/formatters';
@@ -103,8 +104,13 @@ const StakingPage = () => {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to send transaction.');
+      // Обработка отмены пользователем и других ошибок
+      console.error('Transaction failed or cancelled:', err);
+      if (err.message && !err.message.includes('User rejected')) {
+        setError(err.message || 'Failed to send transaction.');
+      }
     } finally {
+      // Обязательно убираем состояние загрузки
       setClaimingNodes(prev => {
         const newSet = new Set(prev);
         newSet.delete(ssnAddress);
@@ -122,6 +128,20 @@ const StakingPage = () => {
       fetchStakingData(manualWalletAddress.trim());
     }
   }, [manualWalletAddress, fetchStakingData]);
+
+  // Функция для рендера скелетной загрузки
+  const renderSkeletonLoading = () => (
+    <div className={`${styles.summaryContainer} animate-slide-up`}>
+      <SkeletonSummary />
+      <div className={styles.grid}>
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} style={{ animationDelay: `${index * 0.1}s` }}>
+            <SkeletonCard />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className={styles.container}>
@@ -148,14 +168,9 @@ const StakingPage = () => {
 
         {error && <div className={`${styles.error} animate-scale-in`}>{error}</div>}
 
-        {loading && (
-          <div className={`${styles.loading} animate-fade-in`}>
-            <div className={styles.loadingSpinner}></div>
-            <p>Fetching your staking data...</p>
-          </div>
-        )}
+        {loading && renderSkeletonLoading()}
 
-        {stakingSummary && (
+        {!loading && stakingSummary && (
           <div className={`${styles.summaryContainer} animate-slide-up`}>
             <h2 className={styles.summaryTitle}>Your Staking Portfolio</h2>
 
