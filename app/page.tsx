@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet } from './store/wallet';
-import { zilPay } from './lib/zilpay';
 import { ZilPayConnect } from './components/ZilPayConnect';
 import Header from './components/Header';
 import StakingNode from './components/StakingNode';
@@ -58,11 +57,19 @@ const StakingPage = () => {
     fetchStakingData(manualWalletAddress);
   };
 
+  const formatNumber = (value: bigint) => {
+    const str = value.toString();
+    if (str.length > 12) {
+      return `${str.substring(0, 6)}...${str.substring(str.length - 3)}`;
+    }
+    return str;
+  };
+
   return (
     <div className={styles.container}>
       <Header />
       <main className={styles.main}>
-        <p className={styles.description}>Zilliqa Staking Checker</p>
+        <p className={styles.description}>Zilliqa Staking Dashboard</p>
 
         <div className={styles.zilpayConnectContainer}>
           <ZilPayConnect />
@@ -75,7 +82,7 @@ const StakingPage = () => {
           <div className={styles.inputContainer}>
             <input
               type="text"
-              placeholder="Enter Zilliqa Wallet Address (e.g., 0x...)"
+              placeholder="Enter Zilliqa Wallet Address (0x...)"
               value={manualWalletAddress}
               onChange={handleManualAddressChange}
               className={styles.addressInput}
@@ -90,10 +97,30 @@ const StakingPage = () => {
 
         {stakingSummary && (
           <div className={styles.summaryContainer}>
-            <h2>Staking Summary</h2>
-            <p>Total Staked: {stakingSummary.totalStaked.toString()} Qa</p>
-            <p>Total Unclaimed Rewards: {stakingSummary.totalRewards.toString()} Qa</p>
-            <p>Total Staked Nodes: {stakingSummary.totalNodes}</p>
+            <h2>Staking Portfolio</h2>
+            
+            <div className={styles.summaryStats}>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Total Staked</div>
+                <div className={styles.statValue} title={`${stakingSummary.totalStaked.toString()} Qa`}>
+                  {formatNumber(stakingSummary.totalStaked)} Qa
+                </div>
+              </div>
+              
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Unclaimed Rewards</div>
+                <div className={styles.statValue} title={`${stakingSummary.totalRewards.toString()} Qa`}>
+                  {formatNumber(stakingSummary.totalRewards)} Qa
+                </div>
+              </div>
+              
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>Active Nodes</div>
+                <div className={styles.statValue}>
+                  {stakingSummary.totalNodes}
+                </div>
+              </div>
+            </div>
 
             {stakingSummary.nodes.length > 0 ? (
               <div className={styles.grid}>
@@ -102,7 +129,7 @@ const StakingPage = () => {
                 ))}
               </div>
             ) : (
-              <p>No active stakes found for this address.</p>
+              <p className={styles.noStakes}>No active stakes found for this address.</p>
             )}
           </div>
         )}
@@ -112,3 +139,4 @@ const StakingPage = () => {
 };
 
 export default StakingPage;
+

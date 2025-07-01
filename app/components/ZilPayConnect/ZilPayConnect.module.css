@@ -1,13 +1,37 @@
 .connectButton {
-  background-color: #4CAF50; /* Green */
-  border: none;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   color: white;
-  padding: 15px 32px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  border-radius: 8px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  min-width: 130px;
+  font-family: 'Courier New', monospace;
 }
+
+.connectButton:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.connectButton:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .connectButton {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.8rem;
+    min-width: 120px;
+  }
+}
+
