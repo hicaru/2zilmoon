@@ -1,91 +1,56 @@
 .connectButton {
-  background: var(--primary-gradient);
-  border: none;
-  border-radius: var(--border-radius);
+  padding: 12px 24px;
+  background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary));
   color: white;
-  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
   font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  justify-content: center;
 }
 
-.connectButton:hover {
+.connectButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--purple-accent), var(--purple-primary));
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-}
-
-.connectButton:active {
-  transform: translateY(0);
 }
 
 .connectButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .connected {
-  background: var(--success-gradient);
-  position: relative;
+  background: linear-gradient(135deg, var(--success), #45a049);
 }
 
-.connected::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: shimmer 2s infinite;
+.connected:hover {
+  background: linear-gradient(135deg, #4caf50, var(--success));
 }
 
 .connecting {
-  background: var(--warning-gradient);
-}
-
-.connecting::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  right: 12px;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
-@keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
+  background: linear-gradient(135deg, var(--warning), #f57c00);
+  animation: pulse 2s infinite;
 }
 
 .statusDot {
-  display: inline-block;
   width: 8px;
   height: 8px;
+  background: #4caf50;
   border-radius: 50%;
-  background: #4ade80;
-  margin-right: 8px;
+  display: inline-block;
   animation: pulse 2s infinite;
 }
 
 @media (max-width: 768px) {
   .connectButton {
-    padding: 0.65rem 1.2rem;
-    font-size: 0.8rem;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    min-width: 120px;
   }
 }
 

@@ -44,21 +44,41 @@ Source Tree:
 ```tsx
 'use client';
 
+import { useStore } from 'react-stores';
 import styles from './Header.module.css';
 import { ZilPayConnect } from '../ZilPayConnect';
+import { $settings, updateSettingsStore, Themes } from '../../store/settings';
 
 const Header = () => {
+  const settings = useStore($settings);
+
+  const toggleTheme = () => {
+    const newTheme = settings.theme === Themes.Light ? Themes.Dark : Themes.Light;
+    updateSettingsStore({ ...settings, theme: newTheme });
+    document.documentElement.setAttribute('data-theme', newTheme);
+  };
+
   return (
     <header className={styles.header}>
-      <h1 className={styles.logo}>2zilmoon</h1>
-      <div className={styles.controls}>
-        <ZilPayConnect />
+      <div className={styles.container}>
+        <h1 className={styles.logo}>2zilmoon</h1>
+        <div className={styles.controls}>
+          <button 
+            className={styles.themeToggle}
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+          >
+            {settings.theme === Themes.Light ? '🌙' : '☀️'}
+          </button>
+          <ZilPayConnect />
+        </div>
       </div>
     </header>
   );
 };
 
 export default Header;
+
 
 ```
 
@@ -69,79 +89,83 @@ export default Header;
 
 import styles from './StakingNode.module.css';
 import { NodeStakeInfo } from '../../lib/zilliqa-stake-checker-client';
+import { formatQaWithUnit, formatAddress, formatCommissionRate } from '../../lib/formatters';
 
 interface StakingNodeProps {
   node: NodeStakeInfo;
+  onClaim?: () => void;
+  onUnstake?: () => void;
 }
 
-const StakingNode: React.FC<StakingNodeProps> = ({ node }) => {
+const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) => {
   const hasRewards = node.rewardsAmount > 0n;
 
-  const formatNumber = (value: bigint) => {
-    const str = value.toString();
-    if (str.length > 15) {
-      return `${str.substring(0, 8)}...${str.substring(str.length - 4)}`;
-    }
-    return str;
-  };
-
-  const formatAddress = (address: string) => {
-    return `${address.substring(0, 8)}...${address.substring(address.length - 6)}`;
-  };
-
-  const formatCommissionRate = (rate: bigint) => {
-    const rateNumber = Number(rate) / 10000000; // Конвертируем из 10^7 в проценты
-    return `${rateNumber.toFixed(2)}%`;
-  };
-
   return (
-    <div className={styles.card}>
-      <h3 className={styles.nodeName}>{node.ssnName}</h3>
+    <div className={`${styles.card} animate-scale-in`}>
+      <div className={styles.header}>
+        <h3 className={styles.nodeName}>{node.ssnName}</h3>
+        <span className={`${styles.statusBadge} ${
+          node.status === 'Активен' ? styles.statusActive : styles.statusInactive
+        }`}>
+          {node.status}
+        </span>
+      </div>
       
       <div className={styles.info}>
         <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Address</span>
+          <span className={styles.infoLabel}>Node Address</span>
           <span className={`${styles.infoValue} ${styles.address}`} title={node.ssnAddress}>
-            {formatAddress(node.ssnAddress)}
+            {formatAddress(node.ssnAddress, 8, 6)}
           </span>
         </div>
         
         <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Staked Amount</span>
-          <span className={`${styles.infoValue} ${styles.amount} ${node.stakeAmount.toString().length > 15 ? styles.largeNumber : ''}`} title={`${node.stakeAmount.toString()} Qa`}>
-            {formatNumber(node.stakeAmount)} Qa
-          </span>
-        </div>
-        
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Rewards</span>
-          <span className={`${styles.infoValue} ${styles.rewards} ${node.rewardsAmount.toString().length > 15 ? styles.largeNumber : ''}`} title={`${node.rewardsAmount.toString()} Qa`}>
-            {formatNumber(node.rewardsAmount)} Qa
-          </span>
-        </div>
-        
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Commission</span>
-          <span className={styles.infoValue}>
+          <span className={styles.infoLabel}>Commission Rate</span>
+          <span className={`${styles.infoValue} ${styles.commission}`}>
             {formatCommissionRate(node.commissionRate)}
           </span>
         </div>
+      </div>
+
+      <div className={styles.metrics}>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>Staked</div>
+          <div className={`${styles.metricValue} ${styles.amount}`} 
+               title={`${node.stakeAmount.toString()} Qa`}>
+            {formatQaWithUnit(node.stakeAmount)}
+          </div>
+        </div>
         
-        <div className={styles.infoItem}>
-          <span className={styles.infoLabel}>Status</span>
-          <span className={`${styles.infoValue} ${styles.status} ${node.status === 'Активен' ? styles.statusActive : styles.statusInactive}`}>
-            {node.status}
-          </span>
+        <div className={styles.metric}>
+          <div className={styles.metricLabel}>Rewards</div>
+          <div className={`${styles.metricValue} ${styles.rewards}`} 
+               title={`${node.rewardsAmount.toString()} Qa`}>
+            {formatQaWithUnit(node.rewardsAmount)}
+          </div>
         </div>
       </div>
       
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <button className={`${styles.button} ${styles.claimButton}`}>
-            Claim Rewards
-          </button>
+          <>
+            <button 
+              className={`${styles.button} ${styles.claimButton}`}
+              onClick={onClaim}
+            >
+              Claim Rewards
+            </button>
+            <button 
+              className={`${styles.button} ${styles.secondaryButton}`}
+              onClick={onUnstake}
+            >
+              Unstake
+            </button>
+          </>
         ) : (
-          <button className={`${styles.button} ${styles.unstakeButton}`}>
+          <button 
+            className={`${styles.button} ${styles.unstakeButton}`}
+            onClick={onUnstake}
+          >
             Unstake
           </button>
         )}
@@ -159,44 +183,58 @@ export default StakingNode;
 
 ```tsx
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useWallet } from '../../store/wallet';
 import { zilPay } from '../../lib/zilpay';
+import { formatAddress } from '../../lib/formatters';
 import styles from './ZilPayConnect.module.css';
 
 export const ZilPayConnect = () => {
   const { wallet, setWallet } = useWallet();
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     zilPay.observable(setWallet);
   }, [setWallet]);
 
   const handleConnect = async () => {
-    const connectedWallet = await zilPay.connect();
-    if (connectedWallet) {
-      setWallet(connectedWallet);
+    if (connecting) return;
+    
+    setConnecting(true);
+    try {
+      const connectedWallet = await zilPay.connect();
+      if (connectedWallet) {
+        setWallet(connectedWallet);
+      }
+    } catch (error) {
+      console.error('Failed to connect:', error);
+    } finally {
+      setConnecting(false);
     }
   };
 
-  const trimAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
-
   return (
-    <div>
+    <button 
+      className={`${styles.connectButton} ${
+        wallet ? styles.connected : connecting ? styles.connecting : ''
+      }`}
+      onClick={handleConnect}
+      disabled={connecting}
+    >
       {wallet ? (
-        <button className={styles.connectButton}>
-          {trimAddress(wallet.bech32)}
-        </button>
+        <>
+          <span className={styles.statusDot}></span>
+          {formatAddress(wallet.bech32)}
+        </>
+      ) : connecting ? (
+        'Connecting...'
       ) : (
-        <button className={styles.connectButton} onClick={handleConnect}>
-          Connect
-        </button>
+        'Connect Wallet'
       )}
-    </div>
+    </button>
   );
 };
+
 
 ```
 
@@ -459,33 +497,44 @@ export class DragonDex {
 `2zilmoon/app/lib/formatters.ts`:
 
 ```ts
-export const formatNumber = (value: bigint, options?: Intl.NumberFormatOptions): string => {
-  // Конвертируем bigint в number для форматирования
-  const numberValue = Number(value);
+// Конвертация Qa в ZIL (1 ZIL = 10^12 Qa)
+const QA_TO_ZIL = 1000000000000n;
+
+export const formatQaToZil = (qa: bigint): string => {
+  const zil = Number(qa) / Number(QA_TO_ZIL);
   
-  // Если число слишком большое для Number, обрабатываем как строку
-  if (numberValue === Infinity || numberValue.toString() !== value.toString()) {
-    const str = value.toString();
-    if (str.length > 15) {
-      return `${str.substring(0, 8)}...${str.substring(str.length - 4)}`;
-    }
-    return addCommas(str);
-  }
+  if (zil === 0) return '0';
   
   const formatter = new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: 0,
-    ...options
+    minimumFractionDigits: 0,
+    maximumFractionDigits: zil < 1 ? 6 : 2,
   });
   
-  return formatter.format(numberValue);
+  return formatter.format(zil);
 };
 
-export const formatCurrency = (value: bigint, currency: string = 'ZIL'): string => {
-  const formatted = formatNumber(value);
-  return `${formatted} ${currency}`;
+export const formatQaWithUnit = (qa: bigint, showUnit: boolean = true): string => {
+  const zil = formatQaToZil(qa);
+  return showUnit ? `${zil} ZIL` : zil;
 };
 
-export const formatAddress = (address: string, startChars: number = 8, endChars: number = 6): string => {
+export const formatLargeNumber = (value: bigint): string => {
+  const num = Number(value);
+  
+  if (num >= 1e9) {
+    return new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      compactDisplay: 'short',
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+  
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0
+  }).format(num);
+};
+
+export const formatAddress = (address: string, startChars: number = 6, endChars: number = 4): string => {
   if (!address || address.length <= startChars + endChars) {
     return address;
   }
@@ -493,28 +542,21 @@ export const formatAddress = (address: string, startChars: number = 8, endChars:
 };
 
 export const formatCommissionRate = (rate: bigint): string => {
-  const rateNumber = Number(rate) / 10000000; // Конвертируем из 10^7 в проценты
-  const formatter = new Intl.NumberFormat('en-US', {
+  const rateNumber = Number(rate) / 10000000;
+  return new Intl.NumberFormat('en-US', {
     style: 'percent',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  });
-  return formatter.format(rateNumber / 100);
+  }).format(rateNumber / 100);
 };
 
-// Вспомогательная функция для добавления запятых в большие числа
-const addCommas = (str: string): string => {
-  return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-};
-
-export const formatQa = (qa: bigint): string => {
-  const qaString = qa.toString();
-  if (qaString.length > 12) {
-    // Для очень больших чисел показываем сокращенную версию
-    const formatted = formatNumber(qa);
-    return `${formatted} Qa`;
-  }
-  return `${formatNumber(qa)} Qa`;
+export const formatUSD = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
 };
 
 
@@ -1180,11 +1222,11 @@ function getZilPay(): Promise<any> {
 
 import { useState, useEffect } from 'react';
 import { useWallet } from './store/wallet';
-import { ZilPayConnect } from './components/ZilPayConnect';
 import Header from './components/Header';
 import StakingNode from './components/StakingNode';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
+import { formatQaWithUnit, formatAddress } from './lib/formatters';
 
 const StakingPage = () => {
   const { wallet } = useWallet();
@@ -1235,64 +1277,82 @@ const StakingPage = () => {
     fetchStakingData(manualWalletAddress);
   };
 
-  const formatNumber = (value: bigint) => {
-    const str = value.toString();
-    if (str.length > 12) {
-      return `${str.substring(0, 6)}...${str.substring(str.length - 3)}`;
-    }
-    return str;
-  };
-
   return (
     <div className={styles.container}>
       <Header />
       <main className={styles.main}>
-        <p className={styles.description}>Zilliqa Staking Dashboard</p>
+        <div className={`${styles.hero} animate-fade-in`}>
+          <h1 className={styles.title}>2zilmoon</h1>
+          <p className={styles.description}>
+            Seamless Zilliqa Staking Management - Track, Claim, and Migrate Your Stakes
+          </p>
+        </div>
 
-        <div className={styles.zilpayConnectContainer}>
-          <ZilPayConnect />
-          {wallet && wallet.bech32 && (
-            <p className={styles.connectedAddress}>Connected: {wallet.bech32}</p>
+        <div className={`${styles.walletSection} ${wallet ? styles.walletConnected : ''} animate-slide-up`}>
+          <h2 className={styles.walletTitle}>
+            {wallet ? 'Wallet Connected' : 'Connect Your Wallet'}
+          </h2>
+          
+          {wallet ? (
+            <div className={styles.connectedInfo}>
+              <span>✅ Connected to:</span>
+              <span className={styles.connectedAddress}>
+                {formatAddress(wallet.bech32, 10, 8)}
+              </span>
+            </div>
+          ) : (
+            <div className={styles.inputContainer}>
+              <input
+                type="text"
+                placeholder="Enter Zilliqa Address (0x...)"
+                value={manualWalletAddress}
+                onChange={handleManualAddressChange}
+                className={styles.addressInput}
+              />
+              <button 
+                onClick={handleManualFetch} 
+                disabled={loading} 
+                className={styles.fetchButton}
+              >
+                {loading ? 'Loading...' : 'Check Stakes'}
+              </button>
+            </div>
           )}
         </div>
 
-        {!wallet && (
-          <div className={styles.inputContainer}>
-            <input
-              type="text"
-              placeholder="Enter Zilliqa Wallet Address (0x...)"
-              value={manualWalletAddress}
-              onChange={handleManualAddressChange}
-              className={styles.addressInput}
-            />
-            <button onClick={handleManualFetch} disabled={loading} className={styles.fetchButton}>
-              {loading ? 'Fetching...' : 'Get Staking Info'}
-            </button>
+        {error && (
+          <div className={`${styles.error} animate-scale-in`}>
+            {error}
           </div>
         )}
 
-        {error && <p className={styles.error}>{error}</p>}
+        {loading && (
+          <div className={`${styles.loading} animate-fade-in`}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Fetching your staking data...</p>
+          </div>
+        )}
 
         {stakingSummary && (
-          <div className={styles.summaryContainer}>
-            <h2>Staking Portfolio</h2>
+          <div className={`${styles.summaryContainer} animate-slide-up`}>
+            <h2 className={styles.summaryTitle}>Your Staking Portfolio</h2>
             
             <div className={styles.summaryStats}>
-              <div className={styles.statCard}>
+              <div className={`${styles.statCard} ${styles.totalStaked}`}>
                 <div className={styles.statLabel}>Total Staked</div>
                 <div className={styles.statValue} title={`${stakingSummary.totalStaked.toString()} Qa`}>
-                  {formatNumber(stakingSummary.totalStaked)} Qa
+                  {formatQaWithUnit(stakingSummary.totalStaked)}
                 </div>
               </div>
               
-              <div className={styles.statCard}>
+              <div className={`${styles.statCard} ${styles.totalRewards}`}>
                 <div className={styles.statLabel}>Unclaimed Rewards</div>
                 <div className={styles.statValue} title={`${stakingSummary.totalRewards.toString()} Qa`}>
-                  {formatNumber(stakingSummary.totalRewards)} Qa
+                  {formatQaWithUnit(stakingSummary.totalRewards)}
                 </div>
               </div>
               
-              <div className={styles.statCard}>
+              <div className={`${styles.statCard} ${styles.totalNodes}`}>
                 <div className={styles.statLabel}>Active Nodes</div>
                 <div className={styles.statValue}>
                   {stakingSummary.totalNodes}
@@ -1302,12 +1362,21 @@ const StakingPage = () => {
 
             {stakingSummary.nodes.length > 0 ? (
               <div className={styles.grid}>
-                {stakingSummary.nodes.map((node) => (
-                  <StakingNode key={node.ssnAddress} node={node} />
+                {stakingSummary.nodes.map((node, index) => (
+                  <div key={node.ssnAddress} style={{ animationDelay: `${index * 0.1}s` }}>
+                    <StakingNode 
+                      node={node} 
+                      onClaim={() => console.log('Claim rewards for', node.ssnName)}
+                      onUnstake={() => console.log('Unstake from', node.ssnName)}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
-              <p className={styles.noStakes}>No active stakes found for this address.</p>
+              <div className={`${styles.noStakes} animate-scale-in`}>
+                <p>No active stakes found for this address.</p>
+                <p>Start staking to see your portfolio here!</p>
+              </div>
             )}
           </div>
         )}

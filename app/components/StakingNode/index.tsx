@@ -60,20 +60,12 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
       
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <>
-            <button 
-              className={`${styles.button} ${styles.claimButton}`}
-              onClick={onClaim}
-            >
-              Claim Rewards
-            </button>
-            <button 
-              className={`${styles.button} ${styles.secondaryButton}`}
-              onClick={onUnstake}
-            >
-              Unstake
-            </button>
-          </>
+          <button 
+            className={`${styles.button} ${styles.claimButton}`}
+            onClick={onClaim}
+          >
+            Claim Rewards
+          </button>
         ) : (
           <button 
             className={`${styles.button} ${styles.unstakeButton}`}
