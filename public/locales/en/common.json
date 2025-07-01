@@ -1,0 +1,9 @@
+{
+  "title": "2zilmoon",
+  "connect_wallet": "Connect Wallet",
+  "description": "Migrate your staked assets from Zilliqa Legacy to Zilliqa (EVM).",
+  "staked_amount": "Staked Amount",
+  "rewards": "Rewards",
+  "claim": "Claim",
+  "unstake": "Unstake"
+}

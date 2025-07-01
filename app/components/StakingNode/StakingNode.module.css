@@ -1,0 +1,68 @@
+.card {
+  background: #1a1a3a;
+  border: 1px solid #3a3a5a;
+  border-radius: 10px;
+  padding: 20px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-shadow: 0 0 10px rgba(0, 217, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+}
+
+.nodeName {
+  font-size: 1.5rem;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 5px #00d9ff;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #ccc;
+}
+
+.amount, .rewards {
+  color: #fff;
+  font-weight: bold;
+}
+
+.rewards {
+  color: #00ffaa;
+}
+
+.button {
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.claimButton {
+  background: #00d9ff;
+  color: #0d0d2b;
+}
+
+.claimButton:hover {
+  box-shadow: 0 0 15px #00d9ff;
+}
+
+.unstakeButton {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+.unstakeButton:hover {
+  box-shadow: 0 0 15px #ff4d4d;
+}

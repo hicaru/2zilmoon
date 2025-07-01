@@ -1,0 +1,37 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: #0d0d2b;
+  border-bottom: 1px solid #3a3a5a;
+}
+
+.logo {
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 0 0 10px #00d9ff, 0 0 20px #00d9ff, 0 0 30px #00d9ff;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.connectButton {
+  background: #1a1a3a;
+  border: 1px solid #00d9ff;
+  color: #00d9ff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 5px #00d9ff;
+}
+
+.connectButton:hover {
+  background: #00d9ff;
+  color: #0d0d2b;
+  box-shadow: 0 0 15px #00d9ff;
+}
