@@ -1,18 +1,13 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import styles from './Header.module.css';
-import LanguageSwitcher from '../LanguageSwitcher';
 
 const Header = () => {
-  const { t } = useTranslation();
-
   return (
     <header className={styles.header}>
-      <h1 className={styles.logo}>{t('title')}</h1>
+      <h1 className={styles.logo}>2zilmoon</h1>
       <div className={styles.controls}>
-        <LanguageSwitcher />
-        <button className={styles.connectButton}>{t('connect_wallet')}</button>
+        <button className={styles.connectButton}>Connect Wallet</button>
       </div>
     </header>
   );

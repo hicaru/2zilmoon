@@ -1,9 +1,0 @@
-{
-  "title": "2zilmoon",
-  "connect_wallet": "Подключить кошелек",
-  "description": "Перенесите свои застейканные активы из Zilliqa Legacy в Zilliqa (EVM).",
-  "staked_amount": "Сумма стейка",
-  "rewards": "Награды",
-  "claim": "Клейм",
-  "unstake": "Анстейк"
-}
