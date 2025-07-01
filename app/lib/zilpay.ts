@@ -8,6 +8,14 @@ declare global {
 }
 
 export const zilPay = {
+  crypto: {
+    fromBech32Address: (bech32Address: string) => {
+      if (typeof window === 'undefined' || !window.zilPay || !window.zilPay.crypto) {
+        throw new Error('ZilPay crypto object not available.');
+      }
+      return window.zilPay.crypto.fromBech32Address(bech32Address);
+    },
+  },
   connect: async (): Promise<Wallet | null> => {
     try {
       const zilPay = await getZilPay();
