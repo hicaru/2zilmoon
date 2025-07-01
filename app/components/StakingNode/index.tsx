@@ -6,24 +6,25 @@ import { formatQaWithUnit, formatAddress, formatCommissionRate } from '../../lib
 
 interface StakingNodeProps {
   node: NodeStakeInfo;
-  onClaim?: () => void;
-  onUnstake?: () => void;
+  onClaim: (ssnAddress: string) => void;
+  onUnstake: () => void;
 }
 
 const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) => {
   const hasRewards = node.rewardsAmount > 0n;
-
   return (
     <div className={`${styles.card} animate-scale-in`}>
       <div className={styles.header}>
         <h3 className={styles.nodeName}>{node.ssnName}</h3>
-        <span className={`${styles.statusBadge} ${
-          node.status === 'Активен' ? styles.statusActive : styles.statusInactive
-        }`}>
+        <span
+          className={`${styles.statusBadge} ${
+            node.status === 'Активен' ? styles.statusActive : styles.statusInactive
+          }`}
+        >
           {node.status}
         </span>
       </div>
-      
+
       <div className={styles.info}>
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Node Address</span>
@@ -31,7 +32,7 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
             {formatAddress(node.ssnAddress, 8, 6)}
           </span>
         </div>
-        
+
         <div className={styles.infoItem}>
           <span className={styles.infoLabel}>Commission Rate</span>
           <span className={`${styles.infoValue} ${styles.commission}`}>
@@ -43,34 +44,32 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
       <div className={styles.metrics}>
         <div className={styles.metric}>
           <div className={styles.metricLabel}>Staked</div>
-          <div className={`${styles.metricValue} ${styles.amount}`} 
-               title={`${node.stakeAmount.toString()} Qa`}>
+          <div
+            className={`${styles.metricValue} ${styles.amount}`}
+            title={`${node.stakeAmount.toString()} Qa`}
+          >
             {formatQaWithUnit(node.stakeAmount)}
           </div>
         </div>
-        
+
         <div className={styles.metric}>
           <div className={styles.metricLabel}>Rewards</div>
-          <div className={`${styles.metricValue} ${styles.rewards}`} 
-               title={`${node.rewardsAmount.toString()} Qa`}>
+          <div
+            className={`${styles.metricValue} ${styles.rewards}`}
+            title={`${node.rewardsAmount.toString()} Qa`}
+          >
             {formatQaWithUnit(node.rewardsAmount)}
           </div>
         </div>
       </div>
-      
+
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <button 
-            className={`${styles.button} ${styles.claimButton}`}
-            onClick={onClaim}
-          >
+          <button className={`${styles.button} ${styles.claimButton}`} onClick={() => onClaim(node.ssnAddress)}>
             Claim Rewards
           </button>
         ) : (
-          <button 
-            className={`${styles.button} ${styles.unstakeButton}`}
-            onClick={onUnstake}
-          >
+          <button className={`${styles.button} ${styles.unstakeButton}`} onClick={onUnstake}>
             Unstake
           </button>
         )}
@@ -80,4 +79,3 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
 };
 
 export default StakingNode;
-

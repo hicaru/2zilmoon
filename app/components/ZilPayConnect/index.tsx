@@ -10,7 +10,11 @@ export const ZilPayConnect = () => {
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
-    zilPay.observable(setWallet);
+    zilPay.observable((account)  => {
+      if (wallet?.base16 != account?.base16) {
+        setWallet(account);
+      }
+    });
   }, [setWallet]);
 
   const handleConnect = async () => {

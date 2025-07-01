@@ -147,20 +147,12 @@ const StakingNode: React.FC<StakingNodeProps> = ({ node, onClaim, onUnstake }) =
       
       <div className={styles.buttonContainer}>
         {hasRewards ? (
-          <>
-            <button 
-              className={`${styles.button} ${styles.claimButton}`}
-              onClick={onClaim}
-            >
-              Claim Rewards
-            </button>
-            <button 
-              className={`${styles.button} ${styles.secondaryButton}`}
-              onClick={onUnstake}
-            >
-              Unstake
-            </button>
-          </>
+          <button 
+            className={`${styles.button} ${styles.claimButton}`}
+            onClick={onClaim}
+          >
+            Claim Rewards
+          </button>
         ) : (
           <button 
             className={`${styles.button} ${styles.unstakeButton}`}
@@ -1226,7 +1218,7 @@ import Header from './components/Header';
 import StakingNode from './components/StakingNode';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
-import { formatQaWithUnit, formatAddress } from './lib/formatters';
+import { formatQaWithUnit } from './lib/formatters';
 
 const StakingPage = () => {
   const { wallet } = useWallet();
@@ -1261,6 +1253,7 @@ const StakingPage = () => {
     if (wallet && wallet.bech32) {
       try {
         fetchStakingData(wallet.base16);
+        setManualWalletAddress(''); // Clear manual input when wallet connects
       } catch (e: any) {
         setError(`Error converting address: ${e.message}`);
       }
@@ -1288,37 +1281,24 @@ const StakingPage = () => {
           </p>
         </div>
 
-        <div className={`${styles.walletSection} ${wallet ? styles.walletConnected : ''} animate-slide-up`}>
-          <h2 className={styles.walletTitle}>
-            {wallet ? 'Wallet Connected' : 'Connect Your Wallet'}
-          </h2>
-          
-          {wallet ? (
-            <div className={styles.connectedInfo}>
-              <span>✅ Connected to:</span>
-              <span className={styles.connectedAddress}>
-                {formatAddress(wallet.bech32, 10, 8)}
-              </span>
-            </div>
-          ) : (
-            <div className={styles.inputContainer}>
-              <input
-                type="text"
-                placeholder="Enter Zilliqa Address (0x...)"
-                value={manualWalletAddress}
-                onChange={handleManualAddressChange}
-                className={styles.addressInput}
-              />
-              <button 
-                onClick={handleManualFetch} 
-                disabled={loading} 
-                className={styles.fetchButton}
-              >
-                {loading ? 'Loading...' : 'Check Stakes'}
-              </button>
-            </div>
-          )}
-        </div>
+        {!wallet && (
+          <div className={`${styles.inputContainer} animate-slide-up`}>
+            <input
+              type="text"
+              placeholder="Enter Zilliqa Address (0x...)"
+              value={manualWalletAddress}
+              onChange={handleManualAddressChange}
+              className={styles.addressInput}
+            />
+            <button 
+              onClick={handleManualFetch} 
+              disabled={loading} 
+              className={styles.fetchButton}
+            >
+              {loading ? 'Loading...' : 'Check Stakes'}
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className={`${styles.error} animate-scale-in`}>

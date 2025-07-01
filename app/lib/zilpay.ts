@@ -1,6 +1,5 @@
 'use client';
 import { Wallet } from './types';
-
 declare global {
   interface Window {
     zilPay: any;
@@ -28,6 +27,29 @@ export const zilPay = {
       console.error('Failed to connect to ZilPay:', error);
       return null;
     }
+  },
+  callTransaction: async (
+    contractAddress: string,
+    data: any,
+    amount: string = '0',
+    gasPrice: number = 2000000000,
+    gasLimit: number = 10000,
+  ) => {
+    const zilPay = await getZilPay();
+    const { contracts, utils } = zilPay;
+    const contract = contracts.at(contractAddress);
+    const { BN } = utils;
+
+    return await contract.call(
+      data._tag,
+      data.params,
+      {
+        amount: new BN(amount),
+        gasPrice: new BN(gasPrice),
+        gasLimit: new BN(gasLimit),
+      },
+      true,
+    );
   },
   observable: (callback: (wallet: Wallet | null) => void) => {
     getZilPay().then((zilPay) => {

@@ -7,6 +7,8 @@ import StakingNode from './components/StakingNode';
 import styles from './page.module.css';
 import { ZilliqaStakeChecker, StakedNodesSummary } from './lib/zilliqa-stake-checker-client';
 import { formatQaWithUnit } from './lib/formatters';
+import { zilPay } from './lib/zilpay';
+import { updateTransactions } from './store/transactions';
 
 const StakingPage = () => {
   const { wallet } = useWallet();
@@ -14,6 +16,7 @@ const StakingPage = () => {
   const [stakingSummary, setStakingSummary] = useState<StakedNodesSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const stakingContractAddress = '0xa7C67D49C82c7dc1B73D231640B2e4d0661D37c1';
 
   const fetchStakingData = async (address: string) => {
     if (!address) {
@@ -41,7 +44,7 @@ const StakingPage = () => {
     if (wallet && wallet.bech32) {
       try {
         fetchStakingData(wallet.base16);
-        setManualWalletAddress(''); // Clear manual input when wallet connects
+        setManualWalletAddress('');
       } catch (e: any) {
         setError(`Error converting address: ${e.message}`);
       }
@@ -49,6 +52,38 @@ const StakingPage = () => {
       setStakingSummary(null);
     }
   }, [wallet]);
+
+  const handleClaimRewards = async (ssnAddress: string) => {
+    if (!wallet) {
+      setError('Please connect your wallet to claim rewards.');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        _tag: 'WithdrawStakeRewards',
+        params: [
+          {
+            vname: 'ssnaddr',
+            type: 'ByStr20',
+            value: ssnAddress,
+          },
+        ],
+      };
+      const tx = await zilPay.callTransaction(stakingContractAddress, payload,undefined, undefined, 100000);
+      if (tx.ID) {
+        updateTransactions(wallet.bech32, [
+          { hash: tx.ID, confirmed: false, error: false },
+        ]);
+        alert(`Transaction sent: ${tx.ID}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send transaction.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleManualAddressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setManualWalletAddress(event.target.value);
@@ -78,9 +113,9 @@ const StakingPage = () => {
               onChange={handleManualAddressChange}
               className={styles.addressInput}
             />
-            <button 
-              onClick={handleManualFetch} 
-              disabled={loading} 
+            <button
+              onClick={handleManualFetch}
+              disabled={loading}
               className={styles.fetchButton}
             >
               {loading ? 'Loading...' : 'Check Stakes'}
@@ -88,11 +123,7 @@ const StakingPage = () => {
           </div>
         )}
 
-        {error && (
-          <div className={`${styles.error} animate-scale-in`}>
-            {error}
-          </div>
-        )}
+        {error && <div className={`${styles.error} animate-scale-in`}>{error}</div>}
 
         {loading && (
           <div className={`${styles.loading} animate-fade-in`}>
@@ -104,27 +135,31 @@ const StakingPage = () => {
         {stakingSummary && (
           <div className={`${styles.summaryContainer} animate-slide-up`}>
             <h2 className={styles.summaryTitle}>Your Staking Portfolio</h2>
-            
+
             <div className={styles.summaryStats}>
               <div className={`${styles.statCard} ${styles.totalStaked}`}>
                 <div className={styles.statLabel}>Total Staked</div>
-                <div className={styles.statValue} title={`${stakingSummary.totalStaked.toString()} Qa`}>
+                <div
+                  className={styles.statValue}
+                  title={`${stakingSummary.totalStaked.toString()} Qa`}
+                >
                   {formatQaWithUnit(stakingSummary.totalStaked)}
                 </div>
               </div>
-              
+
               <div className={`${styles.statCard} ${styles.totalRewards}`}>
                 <div className={styles.statLabel}>Unclaimed Rewards</div>
-                <div className={styles.statValue} title={`${stakingSummary.totalRewards.toString()} Qa`}>
+                <div
+                  className={styles.statValue}
+                  title={`${stakingSummary.totalRewards.toString()} Qa`}
+                >
                   {formatQaWithUnit(stakingSummary.totalRewards)}
                 </div>
               </div>
-              
+
               <div className={`${styles.statCard} ${styles.totalNodes}`}>
                 <div className={styles.statLabel}>Active Nodes</div>
-                <div className={styles.statValue}>
-                  {stakingSummary.totalNodes}
-                </div>
+                <div className={styles.statValue}>{stakingSummary.totalNodes}</div>
               </div>
             </div>
 
@@ -132,9 +167,9 @@ const StakingPage = () => {
               <div className={styles.grid}>
                 {stakingSummary.nodes.map((node, index) => (
                   <div key={node.ssnAddress} style={{ animationDelay: `${index * 0.1}s` }}>
-                    <StakingNode 
-                      node={node} 
-                      onClaim={() => console.log('Claim rewards for', node.ssnName)}
+                    <StakingNode
+                      node={node}
+                      onClaim={() => handleClaimRewards(node.ssnAddress)}
                       onUnstake={() => console.log('Unstake from', node.ssnName)}
                     />
                   </div>
@@ -154,4 +189,3 @@ const StakingPage = () => {
 };
 
 export default StakingPage;
-

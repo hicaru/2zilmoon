@@ -1,11 +1,10 @@
-import createStore from 'react-stores';
+import { Store } from 'react-stores';
 
 export type Tx = {
   hash: string;
   confirmed: boolean;
   error: boolean;
 };
-
 export type Txs = {
   transactions: Tx[];
 };
@@ -14,7 +13,7 @@ const initState: Txs = {
   transactions: [],
 };
 
-export const $transactions = createStore(initState);
+export const $transactions = new Store(initState);
 
 export function updateTransactions(key: string, transactions: Tx[]) {
   const state = $transactions.state;
